@@ -652,12 +652,31 @@ const DB = {
     const teachers = await this.select('teachers', 'select=*&order=name');
     const students = await this.select('students', 'select=*,teacher_id&is_active=eq.true');
     const smsLogs = await this.select('sms_logs', 'select=*&order=sent_at.desc&limit=100');
-    return teachers.map(t => {
+    
+    const result = teachers.map(t => {
       const myStudents = students.filter(s => s.teacher_id === t.id);
       const mySms = smsLogs.filter(s => s.teacher_id === t.id);
       const lastSms = mySms[0]?.sent_at ? new Date(mySms[0].sent_at) : null;
       return { ...t, studentCount: myStudents.length, students: myStudents, smsCount: mySms.length, lastSmsSent: lastSms ? `${lastSms.getMonth()+1}/${lastSms.getDate()}` : '-' };
     });
+    
+    // 미배정 학생 (teacher_id가 null)
+    const unassigned = students.filter(s => !s.teacher_id);
+    if (unassigned.length > 0) {
+      result.push({
+        id: '__unassigned__',
+        name: '미배정',
+        is_active: true,
+        studentCount: unassigned.length,
+        students: unassigned,
+        smsCount: 0,
+        lastSmsSent: '-'
+      });
+    }
+    
+    // 전체 학생 수 저장
+    result._totalStudents = students.length;
+    return result;
   },
   async getPaymentSummary() {
     const now = new Date();
@@ -792,8 +811,9 @@ const DB = {
     });
 
     // 상단 요약 카드 업데이트
+    const allTotal = teacherData._totalStudents || totalStudents;
     const vals = document.querySelectorAll('.summary-card .value');
-    if (vals[0]) vals[0].textContent = totalStudents + '명';
+    if (vals[0]) vals[0].textContent = allTotal + '명';
     if (vals[1]) vals[1].textContent = totalCompleted + '명';
     if (vals[2]) vals[2].textContent = totalWarning + '명';
     if (vals[3]) vals[3].textContent = totalDanger + '명';
