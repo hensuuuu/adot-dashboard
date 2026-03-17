@@ -519,7 +519,28 @@
 
   <!-- Right Sidebar -->
   <aside class="right-sidebar">
-    <div class="right-title">📋 최근 활동</div>
+    <div class="right-title" style="display:flex;align-items:center;justify-content:space-between;">
+      📋 최근 활동
+      <span id="activity-filter-btn" style="font-size:14px;cursor:pointer;opacity:0.5;transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" onclick="toggleActivityFilter()">⚙️</span>
+    </div>
+    <div id="activity-filter-panel" style="display:none;padding:8px 0 12px;border-bottom:1px solid #faf0f3;margin-bottom:8px;">
+      <div style="font-size:11px;color:#999;margin-bottom:6px;">표시할 항목</div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666;padding:3px 0;cursor:pointer;">
+        <input type="checkbox" data-activity="hw-alert" checked onchange="saveActivityFilter()"> ⚠ 미수행 경고
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666;padding:3px 0;cursor:pointer;">
+        <input type="checkbox" data-activity="hw-done" checked onchange="saveActivityFilter()"> ✅ 숙제 완료
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666;padding:3px 0;cursor:pointer;">
+        <input type="checkbox" data-activity="attendance" checked onchange="saveActivityFilter()"> 출석/결석
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666;padding:3px 0;cursor:pointer;">
+        <input type="checkbox" data-activity="payment" checked onchange="saveActivityFilter()"> 💳 수강권 결제
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666;padding:3px 0;cursor:pointer;">
+        <input type="checkbox" data-activity="test" checked onchange="saveActivityFilter()"> 📊 테스트 결과
+      </label>
+    </div>
     <div id="activity-feed">
       <div class="activity-item"><div class="activity-text" style="color:#bbb">로딩 중...</div></div>
     </div>
@@ -955,6 +976,35 @@ const DB = {
   // ============================================
   // 최근 활동 피드
   // ============================================
+  // 활동 필터 설정 (localStorage 저장)
+  const ACTIVITY_FILTER_KEY = 'adot_activity_filter';
+  function getActivityFilter() {
+    try {
+      const saved = localStorage.getItem(ACTIVITY_FILTER_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return { 'hw-alert': true, 'hw-done': true, 'attendance': true, 'payment': true, 'test': true };
+  }
+  function saveActivityFilter() {
+    const filter = {};
+    document.querySelectorAll('#activity-filter-panel input[data-activity]').forEach(cb => {
+      filter[cb.dataset.activity] = cb.checked;
+    });
+    localStorage.setItem(ACTIVITY_FILTER_KEY, JSON.stringify(filter));
+    loadActivityFeed();
+  }
+  function toggleActivityFilter() {
+    const panel = document.getElementById('activity-filter-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  }
+  // 페이지 로드 시 저장된 필터 복원
+  (function restoreActivityFilter() {
+    const filter = getActivityFilter();
+    document.querySelectorAll('#activity-filter-panel input[data-activity]').forEach(cb => {
+      cb.checked = !!filter[cb.dataset.activity];
+    });
+  })();
+
   function maskName(name) {
     if (!name || name.length <= 1) return name || '?';
     return name[0] + '*'.repeat(name.length - 1);
@@ -986,16 +1036,14 @@ const DB = {
         // 등원 3일전 수행도 50%이하 → 경고
         if (ddayNum <= 3 && pct < 50) {
           items.push({
-            time: r.created_at,
-            priority: 1,
+            time: r.created_at, priority: 1, cat: 'hw-alert',
             html: `<span class="alert-text">⚠ 미수행 경고</span> — ${maskName(s.name)} (${dday}, ${pct}%) · <strong>${teacherName}T</strong>`
           });
         }
         // 숙제 완료 확인 (수행도 100%)
         if (pct >= 100) {
           items.push({
-            time: r.created_at,
-            priority: 3,
+            time: r.created_at, priority: 3, cat: 'hw-done',
             html: `✅ 숙제 완료 — ${maskName(s.name)} · <strong>${teacherName}T</strong>`
           });
         }
@@ -1012,8 +1060,7 @@ const DB = {
         const st = typeof r.status === 'string' ? JSON.parse(r.status) : (r.status || {});
         const label = st.status === 'absent' ? '❌ 결석' : '✅ 출석';
         items.push({
-          time: r.created_at,
-          priority: 2,
+          time: r.created_at, priority: 2, cat: 'attendance',
           html: `${label} — ${maskName(studentName)} · <strong>${teacherName}T</strong>`
         });
       });
@@ -1027,8 +1074,7 @@ const DB = {
         const studentName = p.student?.name || '학생';
         const amount = (p.amount || 0).toLocaleString();
         items.push({
-          time: p.created_at,
-          priority: 2,
+          time: p.created_at, priority: 2, cat: 'payment',
           html: `💳 수강권 결제 — ${maskName(studentName)} (${amount}원)`
         });
       });
@@ -1043,21 +1089,24 @@ const DB = {
         const teacherName = t.teacher?.name || '미지정';
         const grade = t.grade || t.score || '-';
         items.push({
-          time: t.created_at,
-          priority: 2,
+          time: t.created_at, priority: 2, cat: 'test',
           html: `📊 테스트 결과 — <strong>${teacherName}T</strong> → ${maskName(studentName)} (${grade})`
         });
       });
     } catch(e) {} // test_results 테이블 없으면 무시
 
+    // 필터 적용
+    const filter = getActivityFilter();
+    const filtered = items.filter(item => filter[item.cat] !== false);
+
     // 경고를 상위에, 나머지는 시간순 역순
-    items.sort((a, b) => {
+    filtered.sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority;
       return new Date(b.time) - new Date(a.time);
     });
 
     // 최대 12개만 표시
-    const display = items.slice(0, 12);
+    const display = filtered.slice(0, 12);
 
     if (display.length === 0) {
       feed.innerHTML = '<div class="activity-item"><div class="activity-text" style="color:#bbb">오늘 활동 기록 없음</div></div>';
