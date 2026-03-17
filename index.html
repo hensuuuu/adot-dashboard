@@ -721,25 +721,25 @@ const DB = {
           if (cappedRate < 70) totalAlerts++;
 
           const row = document.createElement('tr');
-          row.innerHTML = \`
+          row.innerHTML = `
             <td>
               <div class="teacher-cell">
-                <div class="teacher-avatar \${color}">\${initial}</div>
-                <div class="teacher-cell-name">\${t.name || '미지정'}T</div>
+                <div class="teacher-avatar ${color}">${initial}</div>
+                <div class="teacher-cell-name">${t.name || '미지정'}T</div>
               </div>
             </td>
-            <td>\${t.studentCount}명</td>
+            <td>${t.studentCount}명</td>
             <td>
               <div class="progress-wrap">
-                <div class="progress-bar"><div class="progress-fill \${fillClass}" style="width:\${cappedRate}%"></div></div>
-                <span class="progress-text" style="color:\${textColor}">\${cappedRate}%</span>
+                <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${cappedRate}%"></div></div>
+                <span class="progress-text" style="color:${textColor}">${cappedRate}%</span>
               </div>
             </td>
-            <td>\${status.label === '긴급' ? '<strong style="color:#e53935;">' : ''}\${t.studentCount - Math.round(t.studentCount * cappedRate / 100)}명\${status.label === '긴급' ? '</strong>' : ''}</td>
-            <td>\${t.smsCount}건 / \${t.studentCount}명</td>
-            <td>\${t.lastSmsSent}</td>
-            <td><span class="status-badge \${status.badge}"><span class="status-dot \${status.dot}"></span> \${status.label}</span></td>
-          \`;
+            <td>${status.label === '긴급' ? '<strong style="color:#e53935;">' : ''}${t.studentCount - Math.round(t.studentCount * cappedRate / 100)}명${status.label === '긴급' ? '</strong>' : ''}</td>
+            <td>${t.smsCount}건 / ${t.studentCount}명</td>
+            <td>${t.lastSmsSent}</td>
+            <td><span class="status-badge ${status.badge}"><span class="status-dot ${status.dot}"></span> ${status.label}</span></td>
+          `;
           tbody.appendChild(row);
         });
 
