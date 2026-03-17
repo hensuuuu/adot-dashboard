@@ -421,69 +421,14 @@
       <div class="broadcast-box">
         <div class="broadcast-header">
           <h3>📢 이번 주 전파사항</h3>
-          <button class="btn btn-save">저장</button>
+          <button class="btn btn-save" id="btn-save-notice" onclick="saveNotice()">저장</button>
         </div>
-        <textarea class="broadcast-textarea">3/17(화) 전파사항
-- 3월 테스트 일정: 3/20(금) ~ 3/21(토)
-- 테스트 범위 안내 문자 발송 기한: 3/18(수)까지
-- 내신 OT 대상자 리스트 확인 필요</textarea>
+        <textarea class="broadcast-textarea" id="notice-text" placeholder="이번 주 전파사항을 입력하세요..."></textarea>
       </div>
 
       <div class="memo-title">👩‍🏫 선생님별 메모</div>
-      <div class="teacher-memo-grid">
-        <div class="teacher-memo-card">
-          <div class="teacher-memo-header">
-            <div class="dot" style="background:#e53935;"></div>
-            <div class="name">진다은T</div>
-          </div>
-          <div class="teacher-memo-text">수행도 관리 부족 — 3월 들어 미수행 학생 증가. 개별 면담 필요. 학부모 문자 발송도 밀리고 있음.</div>
-          <div class="teacher-memo-date">최근 메모: 3/14 — "출결 관리 주의 요망"</div>
-        </div>
-
-        <div class="teacher-memo-card">
-          <div class="teacher-memo-header">
-            <div class="dot" style="background:#ef6c00;"></div>
-            <div class="name">최수아T</div>
-          </div>
-          <div class="teacher-memo-text">전반적으로 양호하나 미수행 2명 이번 주 집중 관리 요청. 테스트 준비 진행 중.</div>
-          <div class="teacher-memo-date">최근 메모: 3/15 — "테스트 범위 안내 완료"</div>
-        </div>
-
-        <div class="teacher-memo-card">
-          <div class="teacher-memo-header">
-            <div class="dot" style="background:#43a047;"></div>
-            <div class="name">박은식T</div>
-          </div>
-          <div class="teacher-memo-text">관리 우수. 학부모 소통 적극적. 이번 달 모범 사례.</div>
-          <div class="teacher-memo-date">최근 메모: 3/13 — "학부모 상담 3건 완료"</div>
-        </div>
-
-        <div class="teacher-memo-card">
-          <div class="teacher-memo-header">
-            <div class="dot" style="background:#43a047;"></div>
-            <div class="name">서민주T</div>
-          </div>
-          <div class="teacher-memo-text">전원 수행 완료 유지 중. 특이사항 없음.</div>
-          <div class="teacher-memo-date">최근 메모: 3/12 — "신규 학생 2명 적응 잘 됨"</div>
-        </div>
-
-        <div class="teacher-memo-card">
-          <div class="teacher-memo-header">
-            <div class="dot" style="background:#43a047;"></div>
-            <div class="name">최옥진T</div>
-          </div>
-          <div class="teacher-memo-text">안정적 관리. 학부모 만족도 높음.</div>
-          <div class="teacher-memo-date">최근 메모: 3/16 — "테스트 범위 안내 완료"</div>
-        </div>
-
-        <div class="teacher-memo-card">
-          <div class="teacher-memo-header">
-            <div class="dot" style="background:#ef6c00;"></div>
-            <div class="name">김민경T</div>
-          </div>
-          <div class="teacher-memo-text">이번 주 컨디션 안 좋다고 함. 케어 필요.</div>
-          <div class="teacher-memo-date">최근 메모: 3/16 — "박서준 학생 출결 부진"</div>
-        </div>
+      <div class="teacher-memo-grid" id="memo-grid">
+        <div style="color:#999; font-size:13px; padding:20px;">로딩 중...</div>
       </div>
     </div>
 
@@ -694,6 +639,7 @@ const DB = {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('tab-' + tabId).classList.add('active');
+    if (tabId === 'memos') loadMemos();
   }
 
   const COLORS = ['pink', 'purple', 'blue', 'green', 'orange'];
@@ -925,6 +871,85 @@ const DB = {
     });
     container.innerHTML = html;
   }
+
+  // ============================================
+  // 전파사항 / 메모 DB 연동
+  // ============================================
+  async function loadMemos() {
+    try {
+      // 전파사항 로드
+      const notices = await DB.select('notices', 'select=*&order=created_at.desc&limit=1');
+      if (notices && notices.length > 0) {
+        document.getElementById('notice-text').value = notices[0].content || '';
+      }
+
+      // 선생님별 메모 로드
+      const teachers = cachedTeachers.length > 0 ? cachedTeachers : await DB.getTeacherSummary();
+      const memos = await DB.select('teacher_memos', 'select=*&order=created_at.desc');
+      const grid = document.getElementById('memo-grid');
+      if (!grid) return;
+
+      const activeTeachers = teachers.filter(t => t.studentCount > 0 && t.id !== '__unassigned__');
+      if (activeTeachers.length === 0) {
+        grid.innerHTML = '<div style="color:#999; font-size:13px;">선생님 데이터 없음</div>';
+        return;
+      }
+
+      const dotColors = ['#e53935', '#ef6c00', '#43a047', '#1976d2', '#7b1fa2'];
+      grid.innerHTML = activeTeachers.map((t, i) => {
+        const teacherMemos = memos.filter(m => m.teacher_id === t.id);
+        const latest = teacherMemos[0];
+        const prev = teacherMemos[1];
+        const dotColor = dotColors[i % dotColors.length];
+
+        return `
+          <div class="teacher-memo-card">
+            <div class="teacher-memo-header">
+              <div class="dot" style="background:${dotColor};"></div>
+              <div class="name">${t.name || '미지정'}T</div>
+            </div>
+            <textarea class="broadcast-textarea" id="memo-${t.id}" style="min-height:60px; font-size:13px;">${latest?.content || ''}</textarea>
+            <div class="teacher-memo-date">${prev ? '이전: ' + new Date(prev.created_at).toLocaleDateString('ko-KR', {month:'numeric', day:'numeric'}) + ' — "' + (prev.content || '').substring(0, 30) + '"' : ''}</div>
+            <button class="btn btn-ghost" style="margin-top:8px;" onclick="saveMemo('${t.id}', '${(t.name || '').replace(/'/g, '')}')">저장</button>
+          </div>`;
+      }).join('');
+    } catch(e) {
+      console.log('메모 로드 실패:', e.message);
+    }
+  }
+
+  async function saveNotice() {
+    const content = document.getElementById('notice-text').value;
+    if (!content.trim()) return;
+    const btn = document.getElementById('btn-save-notice');
+    btn.textContent = '저장 중...';
+    try {
+      await DB.insert('notices', { content, created_by: '원장' });
+      btn.textContent = '✅ 저장됨';
+      setTimeout(() => { btn.textContent = '저장'; }, 2000);
+    } catch(e) {
+      btn.textContent = '❌ 실패';
+      setTimeout(() => { btn.textContent = '저장'; }, 2000);
+    }
+  }
+
+  async function saveMemo(teacherId, teacherName) {
+    const textarea = document.getElementById('memo-' + teacherId);
+    if (!textarea || !textarea.value.trim()) return;
+    const btn = textarea.parentElement.querySelector('.btn');
+    btn.textContent = '저장 중...';
+    try {
+      await DB.insert('teacher_memos', { teacher_id: teacherId, content: textarea.value, created_by: '원장' });
+      btn.textContent = '✅ 저장됨';
+      setTimeout(() => { btn.textContent = '저장'; }, 2000);
+    } catch(e) {
+      btn.textContent = '❌ 실패';
+      setTimeout(() => { btn.textContent = '저장'; }, 2000);
+    }
+  }
+
+  // 메모 탭 전환 시 로드
+  const origSwitchTab = switchTab;
 
   // 필터 이벤트
   document.querySelectorAll('.filter-select').forEach((sel, idx) => {
