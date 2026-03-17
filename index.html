@@ -761,7 +761,17 @@ const DB = {
         });
       }
 
+      // 펼쳐진 카드 상태 보존
+      const expandedIds = Array.from(document.querySelectorAll('[id^="expand-"]')).map(el => el.id.replace('expand-', ''));
       renderTeacherTable(teacherData);
+      // 펼쳐진 카드 복원
+      expandedIds.forEach(tid => {
+        const t = teacherData.find(x => x.id === tid);
+        if (t) {
+          const color = COLORS[teacherData.indexOf(t) % COLORS.length];
+          toggleStudentExpand(t, color);
+        }
+      });
 
       // 결제 데이터
       try {
@@ -1072,8 +1082,8 @@ const DB = {
   // 페이지 로드 시 데이터 로드
   loadRealData();
 
-  // 30초마다 자동 갱신
-  setInterval(loadRealData, 30000);
+  // 5분마다 자동 갱신 (펼친 카드 닫힘 방지)
+  setInterval(loadRealData, 300000);
 
   // ============================================
   // Extension 연동 — CRM 수집
