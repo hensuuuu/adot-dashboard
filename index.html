@@ -348,13 +348,16 @@
       </div>
     </div>
 
-    <!-- 수업일지 미작성 알림 -->
-    <div id="journal-alert" style="display:none; background:linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-radius:16px; padding:20px; margin-bottom:20px; border:1px solid #ffcc80;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <div style="font-size:15px; font-weight:700; color:#e65100;">📝 수업일지 미작성</div>
-        <span id="journal-count" style="background:#e65100; color:white; padding:4px 12px; border-radius:12px; font-size:12px; font-weight:600;">0건</span>
+    <!-- 수업일지 미작성 알림 (토글) -->
+    <div id="journal-alert" style="display:none; background:linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-radius:16px; margin-bottom:20px; border:1px solid #ffcc80; overflow:hidden;">
+      <div id="journal-toggle" style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; cursor:pointer; user-select:none;" onclick="document.getElementById('journal-list').style.display = document.getElementById('journal-list').style.display === 'none' ? 'flex' : 'none'; this.querySelector('.toggle-arrow').textContent = document.getElementById('journal-list').style.display === 'none' ? '▶' : '▼';">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:15px; font-weight:700; color:#e65100;">📝 수업일지 미작성</span>
+          <span id="journal-count" style="background:#e65100; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600;">0건</span>
+        </div>
+        <span class="toggle-arrow" style="font-size:12px; color:#e65100;">▶</span>
       </div>
-      <div id="journal-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <div id="journal-list" style="display:none; flex-direction:column; gap:8px; padding:0 20px 16px 20px;"></div>
     </div>
 
     <!-- Tabs -->
