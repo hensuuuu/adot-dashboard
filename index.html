@@ -728,25 +728,14 @@ const DB = {
     // 요일 필터 시: attendance에 있는 학생만 필터
     if (dayFilter) {
       const dayStudentIds = new Set(attendance.map(a => a.student_id).filter(Boolean));
-      const dayTeacherIds = new Set(attendance.map(a => a.teacher_id).filter(Boolean));
-      // 이름 매칭: 마스킹 이름(김*우) ↔ 풀네임(김민우) 패턴 매칭
-      const dayFullNames = [];
+      // teacher_id 기반 fallback: student_id 없는 attendance의 teacher별 학생 수 추적
+      const dayTeacherStudentCount = new Map();
       attendance.forEach(a => {
-        try { dayFullNames.push(JSON.parse(a.status).name); } catch(e) {}
+        if (!a.student_id && a.teacher_id) {
+          dayTeacherStudentCount.set(a.teacher_id, (dayTeacherStudentCount.get(a.teacher_id) || 0) + 1);
+        }
       });
-      students = students.filter(s => {
-        if (dayStudentIds.has(s.id)) return true;
-        // 마스킹 이름 패턴 매칭
-        const masked = s.name || '';
-        if (masked.length < 2) return false;
-        return dayFullNames.some(fn => {
-          if (!fn || fn.length !== masked.length) return false;
-          for (let i = 0; i < masked.length; i++) {
-            if (masked[i] !== '*' && masked[i] !== fn[i]) return false;
-          }
-          return true;
-        });
-      });
+      students = students.filter(s => dayStudentIds.has(s.id));
     }
     
     // 수행도 매핑: student_id 또는 teacher_id 기준
