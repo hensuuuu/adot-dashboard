@@ -3,177 +3,270 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>대표원장 대시보드 — 에이닷 영어학원</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<title>에이닷 · 원장 대시보드</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap');
+  
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, 'Pretendard', sans-serif; background: #f5f6fa; color: #2d3436; }
+  body { font-family: 'Noto Sans KR', -apple-system, sans-serif; background: #faf8f9; color: #2d2d2d; font-size: 14px; }
   
-  .sidebar { position: fixed; left: 0; top: 0; width: 220px; height: 100vh; background: #1e272e; padding: 20px 0; z-index: 10; }
-  .sidebar .logo { color: #fff; font-size: 16px; font-weight: 700; padding: 0 20px 24px; border-bottom: 1px solid #34495e; }
-  .sidebar .logo small { display: block; font-size: 11px; color: #95a5a6; font-weight: 400; margin-top: 4px; }
-  .sidebar nav { margin-top: 16px; }
-  .sidebar nav a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #b2bec3; text-decoration: none; font-size: 14px; transition: all .15s; }
-  .sidebar nav a:hover, .sidebar nav a.active { background: #2d3436; color: #fff; }
-  .sidebar nav a.active { border-left: 3px solid #0984e3; padding-left: 17px; }
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
   
-  .main { margin-left: 220px; margin-right: 280px; padding: 24px 32px; }
+  /* Sidebar */
+  .sidebar { width: 220px; background: white; border-right: 1px solid #f0e8ec; padding: 24px 0; flex-shrink: 0; }
+  .sidebar-brand { padding: 0 24px 24px; display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo { width: 36px; height: 36px; background: linear-gradient(135deg, #e8456b 0%, #d63384 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 16px; }
+  .sidebar-brand-text h2 { font-size: 15px; font-weight: 700; color: #d63384; }
+  .sidebar-brand-text .sub { font-size: 11px; color: #999; }
   
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-  .header h1 { font-size: 22px; font-weight: 700; }
-  .header .meta { display: flex; gap: 12px; align-items: center; }
-  .header .meta .branch { background: #dfe6e9; padding: 6px 14px; border-radius: 6px; font-size: 13px; }
-  .header .meta .date { color: #636e72; font-size: 13px; }
-  .header .meta .sync { font-size: 12px; color: #00b894; }
+  .sidebar-nav { list-style: none; margin-top: 8px; }
+  .sidebar-nav li { padding: 11px 24px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 10px; color: #666; transition: all 0.15s; border-left: 3px solid transparent; }
+  .sidebar-nav li:hover { background: #fef0f3; color: #d63384; }
+  .sidebar-nav li.active { background: #fef0f3; color: #d63384; font-weight: 600; border-left-color: #d63384; }
+  .sidebar-nav li .icon { font-size: 16px; width: 20px; text-align: center; }
   
-  .cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 28px; }
-  .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-  .card .label { font-size: 12px; color: #636e72; margin-bottom: 8px; }
-  .card .value { font-size: 28px; font-weight: 700; }
-  .card .sub { font-size: 12px; color: #b2bec3; margin-top: 4px; }
-  .card.danger .value { color: #d63031; }
-  .card.warning .value { color: #f39c12; }
-  .card.success .value { color: #00b894; }
+  .sidebar-footer { padding: 20px 24px; margin-top: auto; border-top: 1px solid #f0e8ec; }
+  .sidebar-user { display: flex; align-items: center; gap: 10px; }
+  .sidebar-avatar { width: 32px; height: 32px; background: #fce4ec; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .sidebar-user-name { font-size: 13px; font-weight: 500; }
+  .sidebar-user-role { font-size: 11px; color: #999; }
   
-  .tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #dfe6e9; }
-  .tab { padding: 12px 24px; font-size: 14px; font-weight: 600; color: #636e72; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
-  .tab:hover { color: #2d3436; }
-  .tab.active { color: #0984e3; border-bottom-color: #0984e3; }
-  .tab .tab-badge { background: #d63031; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
+  /* Main */
+  .main { flex: 1; padding: 28px 32px; overflow-y: auto; }
   
+  /* Right sidebar */
+  .right-sidebar { width: 280px; background: white; border-left: 1px solid #f0e8ec; padding: 24px 16px; flex-shrink: 0; overflow-y: auto; }
+  .right-title { font-size: 13px; font-weight: 600; color: #d63384; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .activity-item { padding: 12px 0; border-bottom: 1px solid #faf0f3; }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-time { font-size: 11px; color: #bbb; margin-bottom: 3px; }
+  .activity-text { font-size: 12px; line-height: 1.6; color: #555; }
+  .activity-text strong { color: #d63384; }
+  .activity-text .alert-text { color: #e74c3c; font-weight: 500; }
+  
+  /* Header */
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .page-title { font-size: 22px; font-weight: 700; color: #2d2d2d; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .branch-badge { background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%); color: #c2185b; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .date-text { font-size: 13px; color: #999; }
+  
+  /* Summary Cards */
+  .summary-row { display: flex; gap: 14px; margin-bottom: 28px; }
+  .summary-card { background: white; border-radius: 16px; padding: 20px; flex: 1; box-shadow: 0 2px 8px rgba(214,51,132,0.06); text-align: center; border: 1px solid #f8e8ee; }
+  .summary-card .label { font-size: 11px; color: #999; margin-bottom: 8px; font-weight: 500; }
+  .summary-card .value { font-size: 32px; font-weight: 800; }
+  .summary-card .value.pink { color: #d63384; }
+  .summary-card .value.green { color: #43a047; }
+  .summary-card .value.orange { color: #ef6c00; }
+  .summary-card .value.red { color: #e53935; }
+  .summary-card .value.purple { color: #7b1fa2; }
+  .summary-card .sub { font-size: 11px; color: #bbb; margin-top: 6px; }
+  
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; background: #f5f0f2; border-radius: 12px; padding: 4px; width: fit-content; }
+  .tab { padding: 8px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: #888; border-radius: 10px; transition: all 0.2s; }
+  .tab:hover { color: #d63384; }
+  .tab.active { background: white; color: #d63384; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .tab .badge { background: #d63384; color: white; font-size: 10px; padding: 1px 7px; border-radius: 8px; margin-left: 4px; }
+  
+  /* Tab content */
   .tab-content { display: none; }
   .tab-content.active { display: block; }
   
-  .table-wrap { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; }
-  th { background: #f8f9fa; text-align: left; padding: 12px 16px; font-size: 12px; color: #636e72; font-weight: 600; }
-  td { padding: 14px 16px; font-size: 14px; border-top: 1px solid #f1f2f6; }
-  tr:hover td { background: #f8f9fa; }
+  /* Table */
+  .data-table { width: 100%; background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(214,51,132,0.06); overflow: hidden; border: 1px solid #f8e8ee; }
+  .data-table { table-layout: auto; }
+  .data-table thead th { background: #fef5f8; padding: 14px 12px; font-size: 12px; color: #999; font-weight: 500; text-align: left; border-bottom: 1px solid #f8e8ee; white-space: nowrap; }
+  .data-table tbody td { padding: 14px 12px; border-bottom: 1px solid #faf5f7; font-size: 13px; vertical-align: middle; white-space: nowrap; }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table tbody tr:hover { background: #fef8fa; }
   
-  .status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
-  .status.good { background: #e8f8f5; color: #00b894; }
-  .status.warn { background: #fef9e7; color: #f39c12; }
-  .status.bad { background: #fde8e8; color: #d63031; }
+  /* Teacher name with avatar */
+  .teacher-cell { display: flex; align-items: center; gap: 10px; white-space: nowrap; min-width: 120px; }
+  .teacher-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: white; flex-shrink: 0; }
+  .teacher-avatar.pink { background: linear-gradient(135deg, #e8456b, #d63384); }
+  .teacher-avatar.purple { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
+  .teacher-avatar.blue { background: linear-gradient(135deg, #42a5f5, #1976d2); }
+  .teacher-avatar.green { background: linear-gradient(135deg, #66bb6a, #43a047); }
+  .teacher-avatar.orange { background: linear-gradient(135deg, #ffa726, #ef6c00); }
+  .teacher-cell-name { font-weight: 600; }
   
-  .progress { width: 100px; height: 6px; background: #ecf0f1; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
-  .progress .fill { height: 100%; border-radius: 3px; }
-  .progress .fill.good { background: #00b894; }
-  .progress .fill.warn { background: #fdcb6e; }
-  .progress .fill.bad { background: #d63031; }
+  /* Progress bar */
+  .progress-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-bar { width: 100px; height: 8px; background: #f5f0f2; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; }
+  .progress-fill.high { background: linear-gradient(90deg, #66bb6a, #43a047); }
+  .progress-fill.mid { background: linear-gradient(90deg, #ffa726, #ef6c00); }
+  .progress-fill.low { background: linear-gradient(90deg, #ef5350, #e53935); }
+  .progress-text { font-weight: 600; font-size: 13px; }
   
-  .btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; }
-  .btn-primary { background: #0984e3; color: #fff; }
-  .btn-primary:hover { background: #0770c2; }
-  .btn-outline { background: #fff; color: #636e72; border: 1px solid #dfe6e9; }
-  .btn-outline:hover { border-color: #0984e3; color: #0984e3; }
-  .btn-danger { background: #fde8e8; color: #d63031; }
-  .btn-danger:hover { background: #d63031; color: #fff; }
+  /* Status badge */
+  .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .status-badge.danger { background: #ffeaea; color: #e53935; }
+  .status-badge.warning { background: #fff3e0; color: #ef6c00; }
+  .status-badge.good { background: #e8f5e9; color: #43a047; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-dot.red { background: #e53935; }
+  .status-dot.yellow { background: #ef6c00; }
+  .status-dot.green { background: #43a047; }
   
-  .expand-row { display: none; }
-  .expand-row.open { display: table-row; }
-  .expand-row td { background: #f8f9fa; padding: 16px 24px; }
-  .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-  .student-card { background: #fff; border-radius: 8px; padding: 12px 16px; border: 1px solid #ecf0f1; }
-  .student-card .name { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
-  .student-card .info { font-size: 12px; color: #636e72; line-height: 1.6; }
+  /* Buttons */
+  .btn { border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.15s; }
+  .btn-pink { background: linear-gradient(135deg, #e8456b, #d63384); color: white; }
+  .btn-pink:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-ghost { background: #fef0f3; color: #d63384; }
+  .btn-ghost:hover { background: #fce4ec; }
+  .btn-disabled { background: #f5f5f5; color: #ccc; cursor: default; }
+  .btn-save { background: linear-gradient(135deg, #e8456b, #d63384); color: white; padding: 10px 24px; border-radius: 10px; }
   
-  .memo-section { margin-bottom: 24px; }
-  .memo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .memo-header h3 { font-size: 16px; font-weight: 600; }
-  .notice-box { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 20px; border-left: 4px solid #0984e3; }
-  .notice-box textarea { width: 100%; border: none; font-size: 14px; line-height: 1.6; resize: vertical; min-height: 60px; font-family: inherit; }
-  .teacher-memos { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-  .memo-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-  .memo-card .teacher-name { font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-  .memo-card .teacher-name .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .memo-card textarea { width: 100%; border: 1px solid #ecf0f1; border-radius: 6px; padding: 8px; font-size: 13px; line-height: 1.5; resize: vertical; min-height: 50px; font-family: inherit; }
-  .memo-card .history { margin-top: 8px; font-size: 12px; color: #b2bec3; }
-  .memo-card .save-btn { margin-top: 8px; }
+  /* Broadcast */
+  .broadcast-box { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(214,51,132,0.06); border: 1px solid #f8e8ee; margin-bottom: 28px; }
+  .broadcast-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .broadcast-header h3 { font-size: 14px; font-weight: 600; color: #d63384; }
+  .broadcast-textarea { width: 100%; border: 1px solid #f0e8ec; border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.8; resize: vertical; min-height: 80px; font-family: inherit; background: #fef9fa; }
+  .broadcast-textarea:focus { outline: none; border-color: #d63384; background: white; }
   
-  .payment-summary { display: flex; gap: 16px; margin-bottom: 20px; }
-  .payment-card { flex: 1; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-align: center; }
-  .payment-card .big { font-size: 36px; font-weight: 700; }
-  .payment-card .pct { font-size: 14px; color: #636e72; margin-top: 4px; }
+  /* Teacher memo */
+  .memo-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: #d63384; }
+  .teacher-memo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .teacher-memo-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(214,51,132,0.06); border: 1px solid #f8e8ee; }
+  .teacher-memo-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .teacher-memo-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .teacher-memo-header .name { font-size: 14px; font-weight: 600; }
+  .teacher-memo-text { font-size: 13px; color: #666; line-height: 1.7; background: #fef9fa; padding: 14px; border-radius: 10px; border-left: 3px solid #f8bbd0; }
+  .teacher-memo-date { font-size: 11px; color: #bbb; margin-top: 10px; }
   
-  .timeline { position: fixed; right: 0; top: 0; width: 280px; height: 100vh; background: #fff; border-left: 1px solid #ecf0f1; padding: 20px; overflow-y: auto; z-index: 10; }
-  .timeline h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: #636e72; }
-  .tl-item { padding: 10px 0; border-bottom: 1px solid #f8f9fa; }
-  .tl-item .time { font-size: 11px; color: #b2bec3; }
-  .tl-item .desc { font-size: 13px; margin-top: 4px; line-height: 1.4; }
-  .tl-item .desc .highlight { color: #0984e3; font-weight: 600; }
+  /* Registration */
+  .reg-summary { display: flex; gap: 16px; margin-bottom: 28px; }
+  .reg-card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 2px 8px rgba(214,51,132,0.06); border: 1px solid #f8e8ee; flex: 1; text-align: center; }
+  .reg-card .val { font-size: 36px; font-weight: 800; margin: 10px 0; }
+  .reg-card .val.pink { color: #d63384; }
+  .reg-card .val.green { color: #43a047; }
+  .reg-card .val.red { color: #e53935; }
+  .reg-card .lbl { font-size: 12px; color: #999; }
   
-  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-  .filter-bar select { padding: 8px 12px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 13px; }
+  .unpaid-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #e53935; display: flex; align-items: center; gap: 6px; }
+  .days-badge { font-weight: 700; }
+  .days-badge.urgent { color: #e53935; }
+  .days-badge.warn { color: #ef6c00; }
+  .paid-toggle { margin-top: 20px; font-size: 13px; color: #d63384; cursor: pointer; font-weight: 500; }
+  .paid-toggle:hover { text-decoration: underline; }
   
-  .loading { text-align: center; padding: 40px; color: #b2bec3; font-size: 14px; }
-  .error-msg { background: #fde8e8; color: #d63031; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
-  .db-badge { background: #00b894; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
-  
-  @media (max-width: 1200px) { .timeline { display: none; } .main { margin-right: 0; } }
-  @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; } .cards { grid-template-columns: repeat(2, 1fr); } }
+  /* Filter */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .filter-select { border: 1px solid #f0e8ec; border-radius: 10px; padding: 7px 14px; font-size: 12px; background: white; cursor: pointer; appearance: auto; font-family: inherit; }
+  .filter-select:focus { outline: none; border-color: #d63384; }
 </style>
 </head>
 <body>
 
-<div class="sidebar">
-  <div class="logo">
-    에이닷 영어학원
-    <small>대표원장 대시보드</small>
-  </div>
-  <nav>
-    <a href="#" class="active">📊 대시보드</a>
-    <a href="#">👩‍🏫 선생님 관리</a>
-    <a href="#">👨‍🎓 학생 관리</a>
-    <a href="#">💬 문자 발송</a>
-    <a href="#">⚙️ 설정</a>
+<div class="layout">
+  <!-- Left Sidebar -->
+  <nav class="sidebar" style="display:flex;flex-direction:column;">
+    <div>
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">A</div>
+        <div class="sidebar-brand-text">
+          <h2>에이닷</h2>
+          <div class="sub">대표원장 대시보드</div>
+        </div>
+      </div>
+      <ul class="sidebar-nav">
+        <li class="active"><span class="icon">📊</span> 대시보드</li>
+        <li><span class="icon">👩‍🏫</span> 선생님 관리</li>
+        <li><span class="icon">🧑‍🎓</span> 학생 관리</li>
+        <li><span class="icon">💬</span> 문자 발송</li>
+        <li><span class="icon">⚙️</span> 설정</li>
+      </ul>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">👩‍💼</div>
+        <div>
+          <div class="sidebar-user-name">서예린 원장</div>
+          <div class="sidebar-user-role">대구칠곡지점</div>
+        </div>
+      </div>
+    </div>
   </nav>
-</div>
 
-<div class="timeline" id="timeline">
-  <h3>📋 최근 활동</h3>
-  <div id="timeline-list"><div class="loading">로딩 중...</div></div>
-</div>
+  <!-- Main Content -->
+  <main class="main">
+    <div class="page-header">
+      <div class="page-title">대시보드</div>
+      <div class="header-right">
+        <span class="branch-badge">🏫 대구칠곡지점</span>
+        <span class="date-text" id="today-date">2026년 3월 17일 (화)</span>
+        <button class="btn btn-pink" id="btn-collect" onclick="triggerCollection()">🔄 CRM 수집</button>
+        <span id="collect-status" style="font-size:11px;color:#999;"></span>
+      </div>
+    </div>
 
-<div class="main">
-  <div class="header">
-    <h1>📊 대시보드 <span class="db-badge">LIVE DB</span></h1>
-    <div class="meta">
-      <span class="branch" id="branch-name">🏫 로딩 중...</span>
-      <span class="date" id="today-date"></span>
-      <span class="sync" id="sync-status">● 연결 중...</span>
-      <button class="btn btn-primary" id="btn-collect" onclick="triggerCollection()" style="font-size:13px; padding:8px 16px;">🔄 CRM 수집</button>
+    <!-- Summary Cards -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="label">전체 학생</div>
+        <div class="value pink">48명</div>
+        <div class="sub">활성 재원생</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">수행 완료</div>
+        <div class="value green">32명</div>
+        <div class="sub">67% · 전주 대비 +3</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">주의</div>
+        <div class="value orange">10명</div>
+        <div class="sub">2~3일 미수행</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">미수행</div>
+        <div class="value red">6명</div>
+        <div class="sub">4일 이상</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">금월 수강등록율</div>
+        <div class="value purple">88%</div>
+        <div class="sub">42/48명 결제 완료</div>
+      </div>
     </div>
-  </div>
-  
-  <div id="error-container"></div>
-  
-  <div class="cards" id="summary-cards">
-    <div class="card"><div class="label">전체 학생</div><div class="value" id="total-students">-</div><div class="sub">활성 재원생</div></div>
-    <div class="card success"><div class="label">수행 완료</div><div class="value" id="completed-students">-</div><div class="sub" id="completed-sub"></div></div>
-    <div class="card warning"><div class="label">주의</div><div class="value" id="warning-students">-</div><div class="sub">2~3일 미수행</div></div>
-    <div class="card danger"><div class="label">미수행</div><div class="value" id="danger-students">-</div><div class="sub">4일 이상</div></div>
-    <div class="card"><div class="label">금월 수강등록율</div><div class="value" id="payment-rate">-</div><div class="sub" id="payment-sub"></div></div>
-  </div>
-  
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('student')">🎓 학생관리 <span class="tab-badge" id="badge-danger">-</span></div>
-    <div class="tab" onclick="switchTab('memo')">📝 전파사항 / 메모</div>
-    <div class="tab" onclick="switchTab('payment')">💳 수강등록율</div>
-  </div>
-  
-  <!-- Tab 1: 학생관리 -->
-  <div class="tab-content active" id="tab-student">
-    <div class="filter-bar">
-      <select id="filter-teacher"><option value="">전체 선생님</option></select>
-      <select id="filter-status">
-        <option value="">전체 상태</option>
-        <option value="bad">🔴 미수행만</option>
-        <option value="warn">🟡 주의만</option>
-        <option value="good">✅ 완료만</option>
-      </select>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('students', this)">🎓 학생관리 <span class="badge">6</span></div>
+      <div class="tab" onclick="switchTab('memos', this)">📢 전파사항 / 메모</div>
+      <div class="tab" onclick="switchTab('registration', this)">💳 수강등록율</div>
     </div>
-    <div class="table-wrap">
-      <table>
+
+    <!-- Tab 1: 학생관리 -->
+    <div class="tab-content active" id="tab-students">
+      <div class="filter-row">
+        <select class="filter-select">
+          <option>전체 선생님</option>
+          <option>진다은T</option>
+          <option>최수아T</option>
+          <option>박은식T</option>
+          <option>서민주T</option>
+          <option>최옥진T</option>
+          <option>김민경T</option>
+          <option>조재영T</option>
+        </select>
+        <select class="filter-select">
+          <option>전체 상태</option>
+          <option>🔴 긴급</option>
+          <option>🟡 주의</option>
+          <option>🟢 양호</option>
+        </select>
+        <select class="filter-select">
+          <option>이번 주</option>
+          <option>지난 주</option>
+          <option>이번 달</option>
+        </select>
+      </div>
+
+      <table class="data-table">
         <thead>
           <tr>
             <th>선생님</th>
@@ -183,534 +276,557 @@
             <th>학부모 문자</th>
             <th>마지막 발송</th>
             <th>상태</th>
-            <th>액션</th>
           </tr>
         </thead>
-        <tbody id="teacher-table-body">
-          <tr><td colspan="8" class="loading">DB에서 로딩 중...</td></tr>
+        <tbody>
+          <tr>
+            <td>
+              <div class="teacher-cell">
+                <div class="teacher-avatar pink">다</div>
+                <div class="teacher-cell-name">진다은T</div>
+              </div>
+            </td>
+            <td>5명</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill low" style="width:38%"></div></div>
+                <span class="progress-text" style="color:#e53935">38%</span>
+              </div>
+            </td>
+            <td><strong style="color:#e53935;">3명</strong></td>
+            <td>2건 / 5명</td>
+            <td>3/12</td>
+            <td><span class="status-badge danger"><span class="status-dot red"></span> 긴급</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="teacher-cell">
+                <div class="teacher-avatar purple">수</div>
+                <div class="teacher-cell-name">최수아T</div>
+              </div>
+            </td>
+            <td>6명</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill mid" style="width:58%"></div></div>
+                <span class="progress-text" style="color:#ef6c00">58%</span>
+              </div>
+            </td>
+            <td><strong style="color:#e53935;">2명</strong></td>
+            <td>4건 / 6명</td>
+            <td>3/15</td>
+            <td><span class="status-badge warning"><span class="status-dot yellow"></span> 주의</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="teacher-cell">
+                <div class="teacher-avatar blue">은</div>
+                <div class="teacher-cell-name">박은식T</div>
+              </div>
+            </td>
+            <td>5명</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill high" style="width:81%"></div></div>
+                <span class="progress-text" style="color:#43a047">81%</span>
+              </div>
+            </td>
+            <td>1명</td>
+            <td>4건 / 5명</td>
+            <td>3/17</td>
+            <td><span class="status-badge good"><span class="status-dot green"></span> 양호</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="teacher-cell">
+                <div class="teacher-avatar green">민</div>
+                <div class="teacher-cell-name">서민주T</div>
+              </div>
+            </td>
+            <td>5명</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill high" style="width:89%"></div></div>
+                <span class="progress-text" style="color:#43a047">89%</span>
+              </div>
+            </td>
+            <td>0명</td>
+            <td>5건 / 5명</td>
+            <td>3/17</td>
+            <td><span class="status-badge good"><span class="status-dot green"></span> 양호</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="teacher-cell">
+                <div class="teacher-avatar orange">옥</div>
+                <div class="teacher-cell-name">최옥진T</div>
+              </div>
+            </td>
+            <td>6명</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill high" style="width:85%"></div></div>
+                <span class="progress-text" style="color:#43a047">85%</span>
+              </div>
+            </td>
+            <td>0명</td>
+            <td>6건 / 6명</td>
+            <td>3/17</td>
+            <td><span class="status-badge good"><span class="status-dot green"></span> 양호</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="teacher-cell">
+                <div class="teacher-avatar pink">민</div>
+                <div class="teacher-cell-name">김민경T</div>
+              </div>
+            </td>
+            <td>4명</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill mid" style="width:62%"></div></div>
+                <span class="progress-text" style="color:#ef6c00">62%</span>
+              </div>
+            </td>
+            <td>1명</td>
+            <td>3건 / 4명</td>
+            <td>3/16</td>
+            <td><span class="status-badge warning"><span class="status-dot yellow"></span> 주의</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="teacher-cell">
+                <div class="teacher-avatar blue">재</div>
+                <div class="teacher-cell-name">조재영T</div>
+              </div>
+            </td>
+            <td>4명</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill high" style="width:74%"></div></div>
+                <span class="progress-text" style="color:#43a047">74%</span>
+              </div>
+            </td>
+            <td>0명</td>
+            <td>4건 / 4명</td>
+            <td>3/16</td>
+            <td><span class="status-badge good"><span class="status-dot green"></span> 양호</span></td>
+          </tr>
         </tbody>
       </table>
     </div>
-  </div>
-  
-  <!-- Tab 2: 전파사항/메모 -->
-  <div class="tab-content" id="tab-memo">
-    <div class="memo-section">
-      <div class="memo-header">
-        <h3>📢 이번 주 전파사항</h3>
-        <button class="btn btn-primary" onclick="saveNotice()">저장</button>
+
+    <!-- Tab 2: 전파사항 / 메모 -->
+    <div class="tab-content" id="tab-memos">
+      <div class="broadcast-box">
+        <div class="broadcast-header">
+          <h3>📢 이번 주 전파사항</h3>
+          <button class="btn btn-save">저장</button>
+        </div>
+        <textarea class="broadcast-textarea">3/17(화) 전파사항
+- 3월 테스트 일정: 3/20(금) ~ 3/21(토)
+- 테스트 범위 안내 문자 발송 기한: 3/18(수)까지
+- 내신 OT 대상자 리스트 확인 필요</textarea>
       </div>
-      <div class="notice-box">
-        <textarea id="notice-text" placeholder="이번 주 전파사항을 입력하세요..."></textarea>
+
+      <div class="memo-title">👩‍🏫 선생님별 메모</div>
+      <div class="teacher-memo-grid">
+        <div class="teacher-memo-card">
+          <div class="teacher-memo-header">
+            <div class="dot" style="background:#e53935;"></div>
+            <div class="name">진다은T</div>
+          </div>
+          <div class="teacher-memo-text">수행도 관리 부족 — 3월 들어 미수행 학생 증가. 개별 면담 필요. 학부모 문자 발송도 밀리고 있음.</div>
+          <div class="teacher-memo-date">최근 메모: 3/14 — "출결 관리 주의 요망"</div>
+        </div>
+
+        <div class="teacher-memo-card">
+          <div class="teacher-memo-header">
+            <div class="dot" style="background:#ef6c00;"></div>
+            <div class="name">최수아T</div>
+          </div>
+          <div class="teacher-memo-text">전반적으로 양호하나 미수행 2명 이번 주 집중 관리 요청. 테스트 준비 진행 중.</div>
+          <div class="teacher-memo-date">최근 메모: 3/15 — "테스트 범위 안내 완료"</div>
+        </div>
+
+        <div class="teacher-memo-card">
+          <div class="teacher-memo-header">
+            <div class="dot" style="background:#43a047;"></div>
+            <div class="name">박은식T</div>
+          </div>
+          <div class="teacher-memo-text">관리 우수. 학부모 소통 적극적. 이번 달 모범 사례.</div>
+          <div class="teacher-memo-date">최근 메모: 3/13 — "학부모 상담 3건 완료"</div>
+        </div>
+
+        <div class="teacher-memo-card">
+          <div class="teacher-memo-header">
+            <div class="dot" style="background:#43a047;"></div>
+            <div class="name">서민주T</div>
+          </div>
+          <div class="teacher-memo-text">전원 수행 완료 유지 중. 특이사항 없음.</div>
+          <div class="teacher-memo-date">최근 메모: 3/12 — "신규 학생 2명 적응 잘 됨"</div>
+        </div>
+
+        <div class="teacher-memo-card">
+          <div class="teacher-memo-header">
+            <div class="dot" style="background:#43a047;"></div>
+            <div class="name">최옥진T</div>
+          </div>
+          <div class="teacher-memo-text">안정적 관리. 학부모 만족도 높음.</div>
+          <div class="teacher-memo-date">최근 메모: 3/16 — "테스트 범위 안내 완료"</div>
+        </div>
+
+        <div class="teacher-memo-card">
+          <div class="teacher-memo-header">
+            <div class="dot" style="background:#ef6c00;"></div>
+            <div class="name">김민경T</div>
+          </div>
+          <div class="teacher-memo-text">이번 주 컨디션 안 좋다고 함. 케어 필요.</div>
+          <div class="teacher-memo-date">최근 메모: 3/16 — "박서준 학생 출결 부진"</div>
+        </div>
       </div>
     </div>
-    <div class="memo-section">
-      <div class="memo-header"><h3>👩‍🏫 선생님별 메모</h3></div>
-      <div class="teacher-memos" id="memo-cards"></div>
-    </div>
-  </div>
-  
-  <!-- Tab 3: 수강등록율 -->
-  <div class="tab-content" id="tab-payment">
-    <div class="payment-summary" id="payment-summary"></div>
-    <h3 style="font-size:16px; font-weight:600; margin-bottom:12px; color:#d63031" id="unpaid-title">🔴 미결제 학생</h3>
-    <div class="table-wrap" style="margin-bottom:24px">
-      <table>
+
+    <!-- Tab 3: 수강등록율 -->
+    <div class="tab-content" id="tab-registration">
+      <div class="reg-summary">
+        <div class="reg-card">
+          <div class="lbl">수강등록율</div>
+          <div class="val pink">88%</div>
+          <div class="lbl">42/48명</div>
+        </div>
+        <div class="reg-card">
+          <div class="lbl">결제 완료</div>
+          <div class="val green">42명</div>
+        </div>
+        <div class="reg-card">
+          <div class="lbl">미결제</div>
+          <div class="val red">6명</div>
+        </div>
+        <div class="reg-card">
+          <div class="lbl">금월 결제 총액</div>
+          <div class="val" style="font-size:28px;color:#7b1fa2;">₩14,823,600</div>
+        </div>
+      </div>
+
+      <div class="unpaid-title">🔴 미결제 학생 (6명)</div>
+      <table class="data-table">
         <thead>
           <tr>
             <th>학생</th>
             <th>학교/학년</th>
             <th>담당T</th>
             <th>학부모 연락처</th>
+            <th>전월 납부일</th>
+            <th>경과일</th>
             <th>납부금액</th>
-            <th>상태</th>
-            <th>액션</th>
           </tr>
         </thead>
-        <tbody id="payment-table-body">
-          <tr><td colspan="7" class="loading">DB에서 로딩 중...</td></tr>
+        <tbody>
+          <tr>
+            <td><strong>김*수</strong></td>
+            <td>동평중 / 중3</td>
+            <td>진다은T</td>
+            <td>010-****-1234</td>
+            <td>2/15</td>
+            <td><span class="days-badge urgent">30일</span></td>
+            <td>254,000원</td>
+          </tr>
+          <tr>
+            <td><strong>박*진</strong></td>
+            <td>운암고 / 고2</td>
+            <td>진다은T</td>
+            <td>010-****-5678</td>
+            <td>2/17</td>
+            <td><span class="days-badge urgent">28일</span></td>
+            <td>316,120원</td>
+          </tr>
+          <tr>
+            <td><strong>이*호</strong></td>
+            <td>칠곡중 / 중2</td>
+            <td>박은식T</td>
+            <td>010-****-9012</td>
+            <td>2/20</td>
+            <td><span class="days-badge urgent">25일</span></td>
+            <td>169,350원</td>
+          </tr>
+          <tr>
+            <td><strong>최*서</strong></td>
+            <td>학남고 / 고1</td>
+            <td>최수아T</td>
+            <td>010-****-3456</td>
+            <td>2/25</td>
+            <td><span class="days-badge warn">20일</span></td>
+            <td>254,000원</td>
+          </tr>
+          <tr>
+            <td><strong>한*이</strong></td>
+            <td>칠곡중 / 중3</td>
+            <td>조재영T</td>
+            <td>010-****-7890</td>
+            <td>3/5</td>
+            <td><span class="days-badge warn">12일</span></td>
+            <td>169,350원</td>
+          </tr>
+          <tr>
+            <td><strong>장*원</strong></td>
+            <td>강북중 / 중1</td>
+            <td>최옥진T</td>
+            <td>010-****-2345</td>
+            <td>3/10</td>
+            <td><span class="days-badge">7일</span></td>
+            <td>254,000원</td>
+          </tr>
         </tbody>
       </table>
+
+      <div class="paid-toggle">▶ ✅ 결제 완료 (42명) — 펼치기</div>
     </div>
-  </div>
+  </main>
+
+  <!-- Right Sidebar -->
+  <aside class="right-sidebar">
+    <div class="right-title">📋 최근 활동</div>
+    
+    <div class="activity-item">
+      <div class="activity-time">16:45</div>
+      <div class="activity-text">테스트 결과 입력 — <strong>박은식T</strong> → 이수진 (A등급)</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-time">16:30</div>
+      <div class="activity-text">알림톡 발송 — <strong>최옥진T</strong> → 김*수 학부모</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-time">15:20</div>
+      <div class="activity-text">수강권 결제 — 차*서 (169,350원)</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-time">14:50</div>
+      <div class="activity-text"><span class="alert-text">⚠ 미수행 경고</span> — 홍*동 (진다은T)</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-time">14:10</div>
+      <div class="activity-text">출석 확인 — <strong>서민주T</strong> 반 전원 출석</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-time">13:30</div>
+      <div class="activity-text">수강권 결제 — 김서*2 (316,120원)</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-time">11:00</div>
+      <div class="activity-text">알림톡 발송 — <strong>박은식T</strong> → 소*진 학부모</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-time">10:30</div>
+      <div class="activity-text">전파사항 수정 — 서예린 원장</div>
+    </div>
+  </aside>
 </div>
 
 <script>
 // ============================================
-// Supabase 연결
+// Supabase 클라이언트 (inline)
 // ============================================
 const SUPABASE_URL = 'https://brpruzsnysqmydsgeexe.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_TJaiY1pCJL2fbWxF5S2quA_yBSxs6jB';
 
-let db;
-try {
-  db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch(e) {
-  console.error('Supabase init error:', e);
-}
-
-// 날짜 세팅
-const today = new Date();
-const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-document.getElementById('today-date').textContent = 
-  `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 (${dayNames[today.getDay()]})`;
-
-// ============================================
-// 데이터 로드
-// ============================================
-let teachersData = [];
-let studentsData = [];
-let attendanceData = [];
-let smsData = [];
-let paymentsData = [];
-
-async function loadAll() {
-  try {
-    // 병렬 로드
-    const [branchRes, teacherRes, studentRes, attendanceRes, smsRes, paymentRes] = await Promise.all([
-      db.from('branches').select('*'),
-      db.from('teachers').select('*').eq('is_active', true),
-      db.from('students').select('*').eq('is_active', true),
-      db.from('attendance_records').select('*').order('record_date', { ascending: false }),
-      db.from('sms_logs').select('*').order('sent_at', { ascending: false }),
-      db.from('payments').select('*')
-    ]);
-
-    // 에러 체크
-    const errors = [branchRes, teacherRes, studentRes, attendanceRes, smsRes, paymentRes]
-      .filter(r => r.error);
-    if (errors.length > 0) {
-      showError('DB 조회 에러: ' + errors.map(e => e.error.message).join(', '));
-      return;
-    }
-
-    // 분원
-    if (branchRes.data && branchRes.data.length > 0) {
-      document.getElementById('branch-name').textContent = '🏫 ' + branchRes.data[0].name;
-    }
-
-    teachersData = teacherRes.data || [];
-    studentsData = studentRes.data || [];
-    attendanceData = attendanceRes.data || [];
-    smsData = smsRes.data || [];
-    paymentsData = paymentRes.data || [];
-
-    document.getElementById('sync-status').textContent = '● 연결됨';
-    document.getElementById('sync-status').style.color = '#00b894';
-
-    // 렌더링
-    renderSummary();
-    renderTeacherTable();
-    renderMemos();
-    renderPayments();
-    renderTimeline();
-    populateFilters();
-
-  } catch(e) {
-    showError('연결 실패: ' + e.message);
-    document.getElementById('sync-status').textContent = '● 연결 실패';
-    document.getElementById('sync-status').style.color = '#d63031';
-  }
-}
-
-function showError(msg) {
-  document.getElementById('error-container').innerHTML = 
-    `<div class="error-msg">⚠️ ${msg}</div>`;
-}
-
-// ============================================
-// 요약 카드
-// ============================================
-function renderSummary() {
-  const total = studentsData.length;
-  const now = new Date();
-  
-  // 학생별 최근 출석 기록으로 상태 판단
-  const studentStatus = {};
-  studentsData.forEach(s => {
-    const records = attendanceData.filter(a => a.student_id === s.id);
-    if (records.length === 0) {
-      studentStatus[s.id] = 'none'; // 기록 없음
-      return;
-    }
-    const latest = records[0]; // 이미 날짜 역순 정렬됨
-    const daysDiff = Math.floor((now - new Date(latest.record_date)) / (1000*60*60*24));
-    if (daysDiff <= 1) studentStatus[s.id] = 'good';
-    else if (daysDiff <= 3) studentStatus[s.id] = 'warn';
-    else studentStatus[s.id] = 'bad';
-  });
-  
-  const completed = Object.values(studentStatus).filter(s => s === 'good').length;
-  const warning = Object.values(studentStatus).filter(s => s === 'warn').length;
-  const danger = Object.values(studentStatus).filter(s => s === 'bad' || s === 'none').length;
-  
-  // 결제 현황
-  const thisMonth = now.getMonth() + 1;
-  const thisYear = now.getFullYear();
-  const monthPayments = paymentsData.filter(p => p.period_year === thisYear && p.period_month === thisMonth);
-  const paid = monthPayments.filter(p => p.paid_at !== null).length;
-  const payRate = total > 0 ? Math.round(paid / total * 100) : 0;
-  
-  document.getElementById('total-students').textContent = total + '명';
-  document.getElementById('completed-students').textContent = completed + '명';
-  document.getElementById('completed-sub').textContent = total > 0 ? Math.round(completed/total*100) + '%' : '';
-  document.getElementById('warning-students').textContent = warning + '명';
-  document.getElementById('danger-students').textContent = danger + '명';
-  document.getElementById('badge-danger').textContent = danger;
-  document.getElementById('payment-rate').textContent = payRate + '%';
-  document.getElementById('payment-sub').textContent = `${paid}/${total}명 결제 완료`;
-}
-
-// ============================================
-// 선생님별 테이블
-// ============================================
-function renderTeacherTable() {
-  const tbody = document.getElementById('teacher-table-body');
-  const now = new Date();
-  
-  if (teachersData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="loading">선생님 데이터 없음</td></tr>';
-    return;
-  }
-  
-  let html = '';
-  
-  // 선생님별로 정렬 (수행도 낮은 순)
-  const teacherStats = teachersData.map(t => {
-    const students = studentsData.filter(s => s.teacher_id === t.id);
-    const studentCount = students.length;
-    
-    let completed = 0, danger = 0;
-    students.forEach(s => {
-      const records = attendanceData.filter(a => a.student_id === s.id);
-      if (records.length === 0) { danger++; return; }
-      const daysDiff = Math.floor((now - new Date(records[0].record_date)) / (1000*60*60*24));
-      if (daysDiff <= 1) completed++;
-      else if (daysDiff > 3) danger++;
+const DB = {
+  async select(table, query = '') {
+    const url = `${SUPABASE_URL}/rest/v1/${table}?${query}`;
+    const res = await fetch(url, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
-    
-    const rate = studentCount > 0 ? Math.round(completed / studentCount * 100) : 0;
-    
-    // SMS 발송 현황
-    const monthSms = smsData.filter(s => s.teacher_id === t.id && 
-      new Date(s.sent_at).getMonth() === now.getMonth());
-    const lastSms = smsData.find(s => s.teacher_id === t.id);
-    const lastSmsDate = lastSms ? new Date(lastSms.sent_at).toLocaleDateString('ko-KR', {month:'numeric', day:'numeric'}) : '-';
-    
-    return { ...t, students, studentCount, completed, danger, rate, monthSms: monthSms.length, lastSmsDate };
-  }).sort((a, b) => a.rate - b.rate);
-  
-  teacherStats.forEach((t, idx) => {
-    const statusClass = t.rate < 50 ? 'bad' : t.rate < 75 ? 'warn' : 'good';
-    const statusLabel = t.rate < 50 ? '🔴 긴급' : t.rate < 75 ? '🟡 주의' : '🟢 양호';
-    const btnClass = t.rate < 50 ? 'btn-danger' : 'btn-outline';
-    
-    html += `
-      <tr onclick="toggleExpand('exp-${idx}')" style="cursor:pointer">
-        <td><strong>${t.name}T</strong></td>
-        <td>${t.studentCount}명</td>
-        <td>
-          <span class="progress"><span class="fill ${statusClass}" style="width:${t.rate}%"></span></span>
-          ${t.rate}%
-        </td>
-        <td><strong style="color:${t.danger > 0 ? '#d63031' : '#2d3436'}">${t.danger}명</strong></td>
-        <td>${t.monthSms}건 / ${t.studentCount}명</td>
-        <td>${t.lastSmsDate}</td>
-        <td><span class="status ${statusClass}">${statusLabel}</span></td>
-        <td>${t.danger > 0 ? `<button class="btn ${btnClass}" onclick="event.stopPropagation()">메시지 보내기</button>` : ''}</td>
-      </tr>
-      <tr class="expand-row" id="exp-${idx}">
-        <td colspan="8">
-          <div class="student-grid">
-            ${t.students.map(s => {
-              const records = attendanceData.filter(a => a.student_id === s.id);
-              const lastRecord = records[0];
-              const daysDiff = lastRecord ? Math.floor((now - new Date(lastRecord.record_date)) / (1000*60*60*24)) : 999;
-              const borderColor = daysDiff <= 1 ? '#00b894' : daysDiff <= 3 ? '#fdcb6e' : '#d63031';
-              const smsForStudent = smsData.find(sm => sm.student_id === s.id);
-              const smsStatus = smsForStudent ? `✅ ${new Date(smsForStudent.sent_at).toLocaleDateString('ko-KR', {month:'numeric', day:'numeric'})} 발송` : '❌ 미발송';
-              
-              return `
-                <div class="student-card" style="border-left: 3px solid ${borderColor}">
-                  <div class="name">${s.name}</div>
-                  <div class="info">
-                    ${s.school || ''} / ${s.grade || ''} · 
-                    ${lastRecord ? `마지막 수행: ${new Date(lastRecord.record_date).toLocaleDateString('ko-KR', {month:'numeric', day:'numeric'})} (${daysDiff}일 경과)` : '수행 기록 없음'}
-                    <br>학부모 알림톡: ${smsStatus}
-                    ${daysDiff > 3 && !smsForStudent ? '<br><button class="btn btn-primary" style="margin-top:6px">학부모 문자 보내기</button>' : ''}
-                  </div>
-                </div>`;
-            }).join('')}
-          </div>
-        </td>
-      </tr>`;
-  });
-  
-  tbody.innerHTML = html;
-}
-
-// ============================================
-// 전파사항 / 메모
-// ============================================
-async function renderMemos() {
-  // 전파사항 로드
-  const { data: notices } = await db.from('notices').select('*').order('created_at', { ascending: false }).limit(1);
-  if (notices && notices.length > 0) {
-    document.getElementById('notice-text').value = notices[0].content;
-  }
-  
-  // 선생님별 메모
-  const container = document.getElementById('memo-cards');
-  let html = '';
-  
-  for (const t of teachersData) {
-    const { data: memos } = await db.from('teacher_memos').select('*')
-      .eq('teacher_id', t.id).order('created_at', { ascending: false }).limit(2);
-    
-    const students = studentsData.filter(s => s.teacher_id === t.id);
-    const rate = students.length > 0 ? 
-      Math.round(students.filter(s => {
-        const records = attendanceData.filter(a => a.student_id === s.id);
-        return records.length > 0 && Math.floor((new Date() - new Date(records[0].record_date)) / (1000*60*60*24)) <= 1;
-      }).length / students.length * 100) : 0;
-    
-    const dotColor = rate >= 75 ? '#00b894' : rate >= 50 ? '#fdcb6e' : '#d63031';
-    const latestMemo = memos && memos.length > 0 ? memos[0].content : '';
-    const prevMemo = memos && memos.length > 1 ? 
-      `최근 메모: ${new Date(memos[1].created_at).toLocaleDateString('ko-KR', {month:'numeric', day:'numeric'})} — "${memos[1].content.substring(0, 30)}"` : '';
-    
-    html += `
-      <div class="memo-card">
-        <div class="teacher-name"><span class="dot" style="background:${dotColor}"></span>${t.name}T</div>
-        <textarea id="memo-${t.id}">${latestMemo}</textarea>
-        <div class="history">${prevMemo}</div>
-        <button class="btn btn-outline save-btn" onclick="saveMemo('${t.id}')">저장</button>
-      </div>`;
-  }
-  
-  container.innerHTML = html;
-}
-
-async function saveNotice() {
-  const content = document.getElementById('notice-text').value;
-  const branchId = studentsData.length > 0 ? studentsData[0].branch_id : null;
-  
-  await db.from('notices').insert({
-    branch_id: branchId,
-    content: content,
-    created_by: '원장'
-  });
-  
-  alert('전파사항 저장됨');
-}
-
-async function saveMemo(teacherId) {
-  const content = document.getElementById('memo-' + teacherId).value;
-  
-  await db.from('teacher_memos').insert({
-    teacher_id: teacherId,
-    content: content,
-    created_by: '원장'
-  });
-  
-  alert('메모 저장됨');
-}
-
-// ============================================
-// 수강등록율
-// ============================================
-function renderPayments() {
-  const now = new Date();
-  const thisMonth = now.getMonth() + 1;
-  const thisYear = now.getFullYear();
-  const total = studentsData.length;
-  
-  const monthPayments = paymentsData.filter(p => p.period_year === thisYear && p.period_month === thisMonth);
-  const paid = monthPayments.filter(p => p.paid_at !== null);
-  const unpaid = total - paid.length;
-  const totalAmount = paid.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const payRate = total > 0 ? Math.round(paid.length / total * 100) : 0;
-  
-  // 요약 카드
-  document.getElementById('payment-summary').innerHTML = `
-    <div class="payment-card"><div class="big" style="color:#0984e3">${payRate}%</div><div class="pct">수강등록율 (${paid.length}/${total}명)</div></div>
-    <div class="payment-card"><div class="big" style="color:#00b894">${paid.length}명</div><div class="pct">결제 완료</div></div>
-    <div class="payment-card"><div class="big" style="color:#d63031">${unpaid}명</div><div class="pct">미결제</div></div>
-    <div class="payment-card"><div class="big">₩${totalAmount.toLocaleString()}</div><div class="pct">금월 결제 총액</div></div>
-  `;
-  
-  document.getElementById('unpaid-title').textContent = `🔴 미결제 학생 (${unpaid}명)`;
-  
-  // 미결제 학생 테이블 — 결제 기록 없는 학생
-  const paidStudentIds = new Set(paid.map(p => p.student_id));
-  const unpaidStudents = studentsData.filter(s => !paidStudentIds.has(s.id));
-  
-  const tbody = document.getElementById('payment-table-body');
-  if (unpaidStudents.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#00b894; padding:20px">🎉 전원 결제 완료!</td></tr>';
-    return;
-  }
-  
-  tbody.innerHTML = unpaidStudents.map(s => {
-    const teacher = teachersData.find(t => t.id === s.teacher_id);
-    return `
-      <tr>
-        <td><strong>${s.name}</strong></td>
-        <td>${s.school || '-'} / ${s.grade || '-'}</td>
-        <td>${teacher ? teacher.name + 'T' : '-'}</td>
-        <td>${s.parent_phone || '-'}</td>
-        <td>-</td>
-        <td><span class="status bad">미결제</span></td>
-        <td><button class="btn btn-primary">연락하기</button></td>
-      </tr>`;
-  }).join('');
-}
-
-// ============================================
-// 타임라인
-// ============================================
-function renderTimeline() {
-  const container = document.getElementById('timeline-list');
-  let items = [];
-  
-  // SMS 로그에서 최근 활동
-  smsData.slice(0, 5).forEach(s => {
-    const teacher = teachersData.find(t => t.id === s.teacher_id);
-    const time = new Date(s.sent_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    items.push({
-      time,
-      desc: `${s.message_type || 'SMS'} 발송 — <span class="highlight">${teacher ? teacher.name + 'T' : '?'}</span> → ${s.recipient_name || '학부모'}`
+    if (!res.ok) throw new Error(`DB select failed: ${res.status}`);
+    return res.json();
+  },
+  async insert(table, data) {
+    const url = `${SUPABASE_URL}/rest/v1/${table}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(Array.isArray(data) ? data : [data])
     });
-  });
-  
-  // 출석 기록
-  attendanceData.slice(0, 5).forEach(a => {
-    const student = studentsData.find(s => s.id === a.student_id);
-    const teacher = teachersData.find(t => t.id === a.teacher_id);
-    items.push({
-      time: a.record_date,
-      desc: `수행 기록 — <span class="highlight">${teacher ? teacher.name + 'T' : ''}</span> → ${student ? student.name : '?'} (${a.score || a.status})`
+    return res.ok;
+  },
+  async getTeacherSummary() {
+    const teachers = await this.select('teachers', 'select=*&order=name');
+    const students = await this.select('students', 'select=*,teacher_id&is_active=eq.true');
+    const smsLogs = await this.select('sms_logs', 'select=*&order=sent_at.desc&limit=100');
+    return teachers.map(t => {
+      const myStudents = students.filter(s => s.teacher_id === t.id);
+      const mySms = smsLogs.filter(s => s.teacher_id === t.id);
+      const lastSms = mySms[0]?.sent_at ? new Date(mySms[0].sent_at) : null;
+      return { ...t, studentCount: myStudents.length, students: myStudents, smsCount: mySms.length, lastSmsSent: lastSms ? `${lastSms.getMonth()+1}/${lastSms.getDate()}` : '-' };
     });
-  });
-  
-  if (items.length === 0) {
-    container.innerHTML = '<div class="tl-item"><div class="desc" style="color:#b2bec3">아직 활동 기록 없음. Chrome Extension 연동 후 자동 표시됩니다.</div></div>';
-    return;
+  },
+  async getPaymentSummary() {
+    const now = new Date();
+    const payments = await this.select('payments', `select=*,student:students(name,student_code,school,grade),teacher:teachers(name)&period_year=eq.${now.getFullYear()}&period_month=eq.${now.getMonth()+1}`);
+    const paid = payments.filter(p => p.paid_at);
+    const unpaid = payments.filter(p => !p.paid_at);
+    const totalAmount = paid.reduce((sum, p) => sum + (p.amount || 0), 0);
+    return { paid, unpaid, totalAmount, total: payments.length };
   }
-  
-  container.innerHTML = items.map(i => `
-    <div class="tl-item">
-      <div class="time">${i.time}</div>
-      <div class="desc">${i.desc}</div>
-    </div>
-  `).join('');
-}
+};
+</script>
+<script>
+  function switchTab(tabId, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+  }
 
-// ============================================
-// 필터
-// ============================================
-function populateFilters() {
-  const select = document.getElementById('filter-teacher');
-  teachersData.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.id;
-    opt.textContent = t.name + 'T';
-    select.appendChild(opt);
-  });
-}
+  const COLORS = ['pink', 'purple', 'blue', 'green', 'orange'];
 
-// ============================================
-// UI 유틸
-// ============================================
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  const tabs = { student: 0, memo: 1, payment: 2 };
-  document.querySelectorAll('.tab')[tabs[name]].classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-}
+  function getStatusInfo(completionRate) {
+    if (completionRate < 50) return { badge: 'danger', dot: 'red', label: '긴급' };
+    if (completionRate < 70) return { badge: 'warning', dot: 'yellow', label: '주의' };
+    return { badge: 'good', dot: 'green', label: '양호' };
+  }
 
-function toggleExpand(id) {
-  document.getElementById(id).classList.toggle('open');
-}
-
-// ============================================
-// 초기화
-// ============================================
-loadAll();
-
-// 30초마다 자동 새로고침
-setInterval(loadAll, 30000);
-
-// ============================================
-// Extension 연동 — CRM 수집
-// ============================================
-let extensionConnected = false;
-
-window.addEventListener('message', (event) => {
-  if (event.source !== window) return;
-  if (!event.data || event.data.from !== 'adot-extension') return;
-
-  const btn = document.getElementById('btn-collect');
-
-  switch (event.data.action) {
-    case 'bridgeReady':
-      extensionConnected = true;
-      btn.style.background = '#0984e3';
-      btn.textContent = '🔄 CRM 수집';
-      console.log('[대시보드] Extension 연결됨');
-      break;
-
-    case 'collectionStatus':
-      if (event.data.status === 'started') {
-        btn.style.background = '#fdcb6e';
-        btn.textContent = '⏳ 수집 중...';
-        btn.disabled = true;
-      } else if (event.data.status === 'busy') {
-        btn.textContent = '⏳ 이미 수집 중...';
+  // Supabase에서 실제 데이터 로드
+  async function loadRealData() {
+    try {
+      const teacherData = await DB.getTeacherSummary();
+      
+      if (!teacherData || teacherData.length === 0) {
+        console.log('Supabase 데이터 없음 — 목업 유지');
+        return;
       }
-      break;
 
-    case 'collectionProgress':
-      btn.textContent = '⏳ ' + event.data.message;
-      break;
+      console.log('Supabase 연동 성공! 선생님:', teacherData.length);
 
-    case 'collectionDone':
-      btn.style.background = event.data.error ? '#d63031' : '#00b894';
-      btn.textContent = event.data.error ? '❌ 수집 실패' : '✅ 수집 완료!';
-      btn.disabled = false;
-      // 3초 후 데이터 새로고침
-      setTimeout(() => {
-        loadAll();
-        btn.style.background = '#0984e3';
-        btn.textContent = '🔄 CRM 수집';
-      }, 3000);
-      break;
+      // 선생님 테이블 업데이트
+      const tbody = document.querySelector('#tab-students .data-table tbody');
+      if (tbody && teacherData.some(t => t.studentCount > 0)) {
+        tbody.innerHTML = '';
+        
+        let totalStudents = 0;
+        let totalAlerts = 0;
+        
+        teacherData.forEach((t, i) => {
+          if (t.studentCount === 0) return;
+          
+          const color = COLORS[i % COLORS.length];
+          const initial = t.name ? t.name[0] : '?';
+          // 임시: 수행 완료율은 수집 데이터에서 계산 필요
+          const completionRate = t.studentCount > 0 ? Math.round((t.smsCount / t.studentCount) * 100) : 0;
+          const cappedRate = Math.min(completionRate, 100);
+          const status = getStatusInfo(cappedRate);
+          const fillClass = cappedRate >= 70 ? 'high' : cappedRate >= 50 ? 'mid' : 'low';
+          const textColor = cappedRate >= 70 ? '#43a047' : cappedRate >= 50 ? '#ef6c00' : '#e53935';
+          
+          totalStudents += t.studentCount;
+          if (cappedRate < 70) totalAlerts++;
+
+          const row = document.createElement('tr');
+          row.innerHTML = \`
+            <td>
+              <div class="teacher-cell">
+                <div class="teacher-avatar \${color}">\${initial}</div>
+                <div class="teacher-cell-name">\${t.name || '미지정'}T</div>
+              </div>
+            </td>
+            <td>\${t.studentCount}명</td>
+            <td>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill \${fillClass}" style="width:\${cappedRate}%"></div></div>
+                <span class="progress-text" style="color:\${textColor}">\${cappedRate}%</span>
+              </div>
+            </td>
+            <td>\${status.label === '긴급' ? '<strong style="color:#e53935;">' : ''}\${t.studentCount - Math.round(t.studentCount * cappedRate / 100)}명\${status.label === '긴급' ? '</strong>' : ''}</td>
+            <td>\${t.smsCount}건 / \${t.studentCount}명</td>
+            <td>\${t.lastSmsSent}</td>
+            <td><span class="status-badge \${status.badge}"><span class="status-dot \${status.dot}"></span> \${status.label}</span></td>
+          \`;
+          tbody.appendChild(row);
+        });
+
+        // 상단 요약 카드 업데이트
+        const summaryValues = document.querySelectorAll('.summary-card .value');
+        if (summaryValues[0]) summaryValues[0].textContent = totalStudents + '명';
+      }
+
+      // 결제 데이터
+      try {
+        const paymentData = await DB.getPaymentSummary();
+        if (paymentData.total > 0) {
+          const regRate = Math.round((paymentData.paid.length / paymentData.total) * 100);
+          const summaryValues = document.querySelectorAll('.summary-card .value');
+          if (summaryValues[4]) summaryValues[4].textContent = regRate + '%';
+        }
+      } catch (e) {
+        console.log('결제 데이터 로드 실패:', e.message);
+      }
+
+    } catch (e) {
+      console.log('Supabase 연결 실패 (목업 모드):', e.message);
+    }
   }
-});
 
-function triggerCollection() {
-  const btn = document.getElementById('btn-collect');
+  // 날짜 자동 업데이트
+  const now = new Date();
+  const dayNames = ['일','월','화','수','목','금','토'];
+  document.getElementById('today-date').textContent = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${dayNames[now.getDay()]})`;
 
-  if (!extensionConnected) {
-    // Extension 미설치 → CRM 직접 열기
-    btn.textContent = '⚠️ Extension 필요';
-    btn.style.background = '#d63031';
-    setTimeout(() => {
-      btn.style.background = '#636e72';
-      btn.textContent = '🔄 CRM 수집 (Extension 필요)';
-    }, 2000);
-    return;
+  // 페이지 로드 시 데이터 로드
+  loadRealData();
+
+  // 30초마다 자동 갱신
+  setInterval(loadRealData, 30000);
+
+  // ============================================
+  // Extension 연동 — CRM 수집
+  // ============================================
+  let extensionConnected = false;
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    if (!event.data || event.data.from !== 'adot-extension') return;
+    const btn = document.getElementById('btn-collect');
+    const status = document.getElementById('collect-status');
+
+    switch (event.data.action) {
+      case 'bridgeReady':
+        extensionConnected = true;
+        status.textContent = '● Extension 연결됨';
+        status.style.color = '#43a047';
+        break;
+      case 'collectionStatus':
+        if (event.data.status === 'started') {
+          btn.textContent = '⏳ 수집 중...';
+          btn.style.opacity = '0.7';
+          btn.disabled = true;
+        }
+        break;
+      case 'collectionProgress':
+        status.textContent = event.data.message;
+        break;
+      case 'collectionDone':
+        btn.textContent = event.data.error ? '❌ 실패' : '✅ 완료!';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        setTimeout(() => {
+          loadRealData();
+          btn.textContent = '🔄 CRM 수집';
+        }, 3000);
+        break;
+    }
+  });
+
+  function triggerCollection() {
+    const btn = document.getElementById('btn-collect');
+    const status = document.getElementById('collect-status');
+    if (!extensionConnected) {
+      status.textContent = '⚠️ Extension 미설치';
+      status.style.color = '#e53935';
+      setTimeout(() => { status.textContent = ''; }, 3000);
+      return;
+    }
+    window.postMessage({ from: 'adot-dashboard', action: 'startCollection' }, '*');
+    btn.textContent = '⏳ 요청 중...';
   }
-
-  window.postMessage({
-    from: 'adot-dashboard',
-    action: 'startCollection'
-  }, '*');
-
-  btn.style.background = '#fdcb6e';
-  btn.textContent = '⏳ 수집 요청 중...';
-}
 </script>
 
 </body>
