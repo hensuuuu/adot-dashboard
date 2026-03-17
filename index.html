@@ -158,9 +158,115 @@
   .filter-row { display: flex; gap: 8px; margin-bottom: 16px; }
   .filter-select { border: 1px solid #f0e8ec; border-radius: 10px; padding: 7px 14px; font-size: 12px; background: white; cursor: pointer; appearance: auto; font-family: inherit; }
   .filter-select:focus { outline: none; border-color: #d63384; }
+
+  /* Mobile hamburger */
+  .mobile-header { display: none; }
+  .mobile-tab-bar { display: none; }
+
+  /* ===== Mobile Responsive ===== */
+  @media (max-width: 768px) {
+    .layout { flex-direction: column; }
+
+    /* 사이드바 숨김 + 모바일 헤더 표시 */
+    .sidebar { display: none; }
+    .right-sidebar { display: none; }
+
+    .mobile-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: white; border-bottom: 1px solid #f0e8ec;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .mobile-header .brand { display: flex; align-items: center; gap: 8px; }
+    .mobile-header .brand .logo { width: 28px; height: 28px; background: linear-gradient(135deg, #e8456b, #d63384); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 13px; }
+    .mobile-header .brand h2 { font-size: 14px; font-weight: 700; color: #d63384; }
+    .mobile-header .actions { display: flex; gap: 8px; align-items: center; }
+    .mobile-header .btn { padding: 6px 12px; font-size: 11px; }
+
+    /* 모바일 하단 탭 바 (최근활동 토글용) */
+    .mobile-tab-bar {
+      display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+      background: white; border-top: 1px solid #f0e8ec; z-index: 100;
+      padding: 8px 0; justify-content: space-around;
+    }
+    .mobile-tab-bar button {
+      background: none; border: none; font-size: 11px; color: #888;
+      display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 12px;
+    }
+    .mobile-tab-bar button.active { color: #d63384; font-weight: 600; }
+    .mobile-tab-bar button .icon { font-size: 18px; }
+
+    /* 최근활동 모바일 오버레이 */
+    .right-sidebar.mobile-open {
+      display: block; position: fixed; top: 0; right: 0; bottom: 56px;
+      width: 85vw; max-width: 320px; z-index: 200;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.1); animation: slideIn 0.2s ease;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    .mobile-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.3); z-index: 199;
+    }
+    .mobile-overlay.show { display: block; }
+
+    /* 메인 영역 */
+    .main { padding: 16px; padding-bottom: 72px; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 12px; display: none; }
+
+    /* 요약 카드 가로 스크롤 */
+    .summary-row { display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; flex-wrap: nowrap; }
+    .summary-card { min-width: 120px; flex: 0 0 auto; padding: 14px; }
+    .summary-card .value { font-size: 24px; }
+    .summary-card .label { font-size: 10px; }
+    .summary-card .sub { font-size: 10px; }
+
+    /* 탭 가로 스크롤 */
+    .tabs { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+    .tab { white-space: nowrap; padding: 8px 14px; font-size: 12px; }
+
+    /* 테이블 가로 스크롤 */
+    .data-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .data-table thead th { font-size: 11px; padding: 10px 8px; }
+    .data-table tbody td { font-size: 12px; padding: 10px 8px; }
+
+    /* 선생님 메모 1열 */
+    .teacher-memo-grid { grid-template-columns: 1fr; }
+
+    /* 수강등록 카드 */
+    .reg-summary { flex-direction: column; gap: 10px; }
+    .reg-card { padding: 16px; }
+    .reg-card .val { font-size: 28px; }
+
+    /* 필터 */
+    .filter-row { flex-wrap: wrap; }
+    .filter-select { flex: 1; min-width: 0; }
+
+    /* 전파사항 */
+    .broadcast-box { padding: 16px; }
+    .broadcast-textarea { min-height: 60px; font-size: 14px; }
+  }
+
+  /* 태블릿 (769~1024) */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar { width: 180px; }
+    .right-sidebar { width: 220px; padding: 16px 12px; }
+    .main { padding: 20px; }
+    .summary-card .value { font-size: 26px; }
+  }
 </style>
 </head>
 <body>
+
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <div class="brand"><div class="logo">A</div><h2>에이닷</h2></div>
+  <div class="actions">
+    <span class="date-text" id="today-date-m" style="font-size:11px;color:#999;"></span>
+    <button class="btn btn-pink" onclick="triggerCollection()" style="padding:6px 10px;font-size:11px;">🔄 수집</button>
+  </div>
+</div>
+
+<!-- Mobile overlay for activity panel -->
+<div class="mobile-overlay" id="mobile-overlay" onclick="closeMobileActivity()"></div>
 
 <div class="layout">
   <!-- Left Sidebar -->
@@ -1272,7 +1378,29 @@ const DB = {
     window.postMessage({ from: 'adot-dashboard', action: 'startCollection' }, '*');
     btn.textContent = '⏳ 요청 중...';
   }
+
+  // 모바일 최근활동 패널
+  function openMobileActivity() {
+    document.querySelector('.right-sidebar').classList.add('mobile-open');
+    document.getElementById('mobile-overlay').classList.add('show');
+  }
+  function closeMobileActivity() {
+    document.querySelector('.right-sidebar').classList.remove('mobile-open');
+    document.getElementById('mobile-overlay').classList.remove('show');
+  }
+
+  // 모바일 날짜 동기화
+  const mDate = document.getElementById('today-date-m');
+  if (mDate) mDate.textContent = document.getElementById('today-date').textContent;
 </script>
+
+<!-- Mobile Bottom Tab Bar -->
+<div class="mobile-tab-bar">
+  <button class="active" onclick="switchTab('students', document.querySelector('.tab'))"><span class="icon">🎓</span>학생</button>
+  <button onclick="switchTab('memos', document.querySelectorAll('.tab')[1])"><span class="icon">📢</span>메모</button>
+  <button onclick="switchTab('registration', document.querySelectorAll('.tab')[2])"><span class="icon">💳</span>등록률</button>
+  <button onclick="openMobileActivity()"><span class="icon">📋</span>활동</button>
+</div>
 
 </body>
 </html>
