@@ -243,26 +243,14 @@
     <!-- Tab 1: 학생관리 -->
     <div class="tab-content active" id="tab-students">
       <div class="filter-row">
-        <select class="filter-select">
-          <option>전체 선생님</option>
-          <option>진다은T</option>
-          <option>최수아T</option>
-          <option>박은식T</option>
-          <option>서민주T</option>
-          <option>최옥진T</option>
-          <option>김민경T</option>
-          <option>조재영T</option>
+        <select class="filter-select" id="filter-teacher">
+          <option value="">전체 선생님</option>
         </select>
-        <select class="filter-select">
-          <option>전체 상태</option>
-          <option>🔴 긴급</option>
-          <option>🟡 주의</option>
-          <option>🟢 양호</option>
-        </select>
-        <select class="filter-select">
-          <option>이번 주</option>
-          <option>지난 주</option>
-          <option>이번 달</option>
+        <select class="filter-select" id="filter-status">
+          <option value="">전체 상태</option>
+          <option value="danger">🔴 긴급</option>
+          <option value="warning">🟡 주의</option>
+          <option value="good">🟢 양호</option>
         </select>
       </div>
 
@@ -668,10 +656,10 @@ const DB = {
       console.log('Supabase 연동 성공! 선생님:', teacherData.length);
 
       // 필터 드롭다운 업데이트
-      const filterTeacher = document.querySelector('.filter-select');
+      const filterTeacher = document.getElementById('filter-teacher');
       if (filterTeacher && filterTeacher.options.length <= 1) {
         teacherData.forEach(t => {
-          if (t.studentCount === 0) return;
+          if (t.studentCount === 0 || t.id === '__unassigned__') return;
           const opt = document.createElement('option');
           opt.value = t.id;
           opt.textContent = (t.name || '미지정') + 'T';
@@ -952,17 +940,14 @@ const DB = {
   const origSwitchTab = switchTab;
 
   // 필터 이벤트
-  document.querySelectorAll('.filter-select').forEach((sel, idx) => {
-    sel.addEventListener('change', () => {
-      const teacherFilter = document.querySelectorAll('.filter-select')[0]?.value || '';
-      const statusSel = document.querySelectorAll('.filter-select')[1]?.value || '';
-      let statusFilter = '';
-      if (statusSel.includes('긴급')) statusFilter = 'danger';
-      else if (statusSel.includes('주의')) statusFilter = 'warning';
-      else if (statusSel.includes('양호')) statusFilter = 'good';
-      renderTeacherTable(cachedTeachers, teacherFilter || null, statusFilter || null);
-    });
-  });
+  document.getElementById('filter-teacher').addEventListener('change', applyFilters);
+  document.getElementById('filter-status').addEventListener('change', applyFilters);
+
+  function applyFilters() {
+    const teacherVal = document.getElementById('filter-teacher').value;
+    const statusVal = document.getElementById('filter-status').value;
+    renderTeacherTable(cachedTeachers, teacherVal || null, statusVal || null);
+  }
 
   // 날짜 자동 업데이트
   const now = new Date();
