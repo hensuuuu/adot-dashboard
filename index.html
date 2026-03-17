@@ -859,8 +859,7 @@ const DB = {
     const existing = document.getElementById('expand-' + teacher.id);
     if (existing) { existing.remove(); return; }
 
-    // 다른 펼쳐진 거 닫기
-    document.querySelectorAll('[id^="expand-"]').forEach(el => el.remove());
+    // 여러 개 동시에 열 수 있도록 다른 건 닫지 않음
 
     const row = document.querySelector(`tr[data-teacher-id="${teacher.id}"]`);
     if (!row) return;
