@@ -663,10 +663,9 @@ const DB = {
 
       const completedCount = myPerfs.filter(p => p.progress_pct >= 100).length;
       const inProgressCount = myPerfs.filter(p => p.progress_pct > 0 && p.progress_pct < 100).length;
-      const notStartedCount = myPerfs.length > 0 
-        ? myPerfs.filter(p => p.progress_pct === 0).length
-        : myStudents.length;
-      const hwCompletionRate = totalAssigned > 0 ? Math.round((totalHwCompleted / totalAssigned) * 100) : 0;
+      const notStartedCount = myStudents.length - completedCount - inProgressCount;
+      // 완료율 = 전체 학생 대비 숙제 100% 완료 학생 비율 (숙제 미배정도 미완료 취급)
+      const hwCompletionRate = myStudents.length > 0 ? Math.round((completedCount / myStudents.length) * 100) : 0;
       
       return { 
         ...t, 
