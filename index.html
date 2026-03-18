@@ -1417,11 +1417,11 @@ const DB = {
       });
     } catch(e) {}
 
-    // 3) 수강권 결제 — 이번달 결제건, paid_at 기준 정렬
+    // 3) 수강권 결제 — paid_at(실결제일) 기준, 최근 7일만 (담당T 없어도 포함)
     try {
-      const now = new Date();
+      const sevenDaysAgo = new Date(Date.now() - 7*86400000).toISOString();
       const payments = await DB.select('payments',
-        `select=*,student:students(name),teacher:teachers(name)&paid_at=not.is.null&period_year=eq.${now.getFullYear()}&period_month=eq.${now.getMonth()+1}&order=paid_at.desc&limit=15`);
+        `select=*,student:students(name),teacher:teachers(name)&paid_at=not.is.null&paid_at=gte.${sevenDaysAgo}&order=paid_at.desc&limit=15`);
       payments.forEach(p => {
         const studentName = p.student?.name || '학생';
         const teacherName = p.teacher?.name;
