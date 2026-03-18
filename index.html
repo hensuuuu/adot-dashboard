@@ -1671,6 +1671,10 @@ const DB = {
         extensionConnected = true;
         status.textContent = '● Extension 연결됨';
         status.style.color = '#43a047';
+        // 버전 체크
+        if (event.data.version) {
+          checkExtensionUpdate(event.data.version);
+        }
         break;
       case 'collectionStatus':
         if (event.data.status === 'started') {
@@ -1693,6 +1697,28 @@ const DB = {
         break;
     }
   });
+
+  async function checkExtensionUpdate(currentVersion) {
+    try {
+      const res = await fetch('https://raw.githubusercontent.com/hensuuuu/adot-chrome-extension/main/version.json?t=' + Date.now());
+      if (!res.ok) return;
+      const remote = await res.json();
+      if (remote.version && remote.version !== currentVersion) {
+        // 배너 표시
+        const banner = document.createElement('div');
+        banner.style.cssText = 'background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;padding:14px 20px;border-radius:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 12px rgba(238,90,36,.3);';
+        banner.innerHTML = `
+          <div>
+            <strong style="font-size:15px;">⚠️ Extension 업데이트 필요</strong>
+            <span style="font-size:13px; opacity:.9; margin-left:8px;">현재 v${currentVersion} → 최신 v${remote.version}</span>
+          </div>
+          <a href="${remote.download}" target="_blank" style="background:#fff;color:#ee5a24;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">📥 다운로드</a>
+        `;
+        const main = document.querySelector('.main-content') || document.querySelector('.main');
+        if (main) main.insertBefore(banner, main.firstChild);
+      }
+    } catch(e) { console.log('Update check failed:', e); }
+  }
 
   function triggerCollection() {
     const btn = document.getElementById('btn-collect');
