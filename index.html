@@ -943,6 +943,18 @@ const DB = {
 };
 </script>
 <script>
+  // XSS prevention: escape dynamic data before inserting into HTML
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  const H = escapeHtml; // short alias
+
   function switchTab(tabId, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1054,8 +1066,8 @@ const DB = {
       row.innerHTML = `
         <td>
           <div class="teacher-cell">
-            <div class="teacher-avatar ${color}">${initial}</div>
-            <div class="teacher-cell-name">${t.name || '미지정'}T</div>
+            <div class="teacher-avatar ${color}">${H(initial)}</div>
+            <div class="teacher-cell-name">${H(t.name || '미지정')}T</div>
           </div>
         </td>
         <td>${t.studentCount}명</td>
@@ -1067,7 +1079,7 @@ const DB = {
         </td>
         <td>${status.label === '긴급' ? '<strong style="color:#e53935;">' : ''}${dangerCount}명${status.label === '긴급' ? '</strong>' : ''}</td>
         <td>${t.smsCount}건 / ${t.studentCount}명</td>
-        <td>${t.lastSmsSent}</td>
+        <td>${H(t.lastSmsSent)}</td>
         <td><span class="status-badge ${status.badge}"><span class="status-dot ${status.dot}"></span> ${status.label}</span></td>
       `;
       tbody.appendChild(row);
@@ -1173,8 +1185,8 @@ const DB = {
         
         const teacherHtml = Object.values(byT).map(group => {
           const tName = teacherMap[group[0].teacher_id]?.name;
-          const names = group.map(i => `<span style="display:inline-block; background:#fff3e0; padding:2px 8px; border-radius:4px; margin:2px 2px; font-size:13px;">${i.name || '?'}</span>`).join('');
-          return `<div style="margin-top:6px;"><strong style="font-size:13px; color:#e65100;">${tName ? tName + 'T' : '미배정'}</strong><div style="margin-top:2px;">${names}</div></div>`;
+          const names = group.map(i => `<span style="display:inline-block; background:#fff3e0; padding:2px 8px; border-radius:4px; margin:2px 2px; font-size:13px;">${H(i.name || '?')}</span>`).join('');
+          return `<div style="margin-top:6px;"><strong style="font-size:13px; color:#e65100;">${tName ? H(tName) + 'T' : '미배정'}</strong><div style="margin-top:2px;">${names}</div></div>`;
         }).join('');
         
         return `<div style="background:white; border-radius:10px; padding:12px 16px; border-left:4px solid ${daysAgo >= 3 ? '#e53935' : daysAgo >= 2 ? '#ef6c00' : '#fbc02d'};">
@@ -1228,14 +1240,14 @@ const DB = {
         cards += `
           <div style="background:${bgColor}; border-radius:12px; padding:14px 16px; border:1px solid #f8e8ee; border-left:4px solid ${borderColor};">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <div style="font-weight:600; font-size:14px;">${statusEmoji} ${s._perf?.name || s.name || '이름없음'}</div>
+              <div style="font-weight:600; font-size:14px;">${statusEmoji} ${H(s._perf?.name || s.name || '이름없음')}</div>
               ${perf ? `<span style="font-size:13px; font-weight:700; color:${borderColor};">${pct}%</span>` : '<span style="font-size:12px; color:#999;">수행도 미수집</span>'}
             </div>
             <div style="font-size:12px; color:#666; line-height:1.8;">
-              ${s.school ? s.school + (s.grade ? ' / ' + s.grade : '') : ''}
-              ${perf ? `<br>📝 숙제: ${perf.hw_completed || '-'} / ${perf.hw_assigned || '-'}건` : ''}
-              ${perf?.d_day ? `&nbsp;&nbsp;⏰ ${perf.d_day}` : ''}
-              ${perf?.class_day ? `&nbsp;&nbsp;📅 ${perf.class_day}` : ''}
+              ${s.school ? H(s.school) + (s.grade ? ' / ' + H(s.grade) : '') : ''}
+              ${perf ? `<br>📝 숙제: ${H(perf.hw_completed || '-')} / ${H(perf.hw_assigned || '-')}건` : ''}
+              ${perf?.d_day ? `&nbsp;&nbsp;⏰ ${H(perf.d_day)}` : ''}
+              ${perf?.class_day ? `&nbsp;&nbsp;📅 ${H(perf.class_day)}` : ''}
             </div>
             ${perf ? `<div style="margin-top:8px; height:6px; background:#eee; border-radius:3px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:${borderColor}; border-radius:3px; transition:width .3s;"></div></div>` : ''}
           </div>`;
@@ -1281,9 +1293,9 @@ const DB = {
         const s = p.student || {};
         const t = p.teacher || {};
         return `<tr>
-          <td><strong>${s.name || '-'}</strong></td>
-          <td>${s.school || '-'} / ${s.grade || '-'}</td>
-          <td>${t.name ? t.name + 'T' : '-'}</td>
+          <td><strong>${H(s.name || '-')}</strong></td>
+          <td>${H(s.school || '-')} / ${H(s.grade || '-')}</td>
+          <td>${t.name ? H(t.name) + 'T' : '-'}</td>
           <td>-</td>
           <td>-</td>
           <td><span class="days-badge urgent">-</span></td>
@@ -1307,7 +1319,7 @@ const DB = {
       html += `
         <div class="activity-item">
           <div class="activity-time">${time}</div>
-          <div class="activity-text">${log.message_type || 'SMS'} 발송 — <strong>${teacherName}T</strong> → ${log.recipient_name || '학부모'}</div>
+          <div class="activity-text">${H(log.message_type || 'SMS')} 발송 — <strong>${H(teacherName)}T</strong> → ${H(log.recipient_name || '학부모')}</div>
         </div>`;
     });
     container.innerHTML = html;
@@ -1377,14 +1389,14 @@ const DB = {
         if (ddayNum <= 3 && pct < 50) {
           items.push({
             time: r.created_at, priority: 1, cat: 'hw-alert',
-            html: `<span class="alert-text">⚠ 미수행 경고</span> — ${maskName(s.name)} (${dday}, ${pct}%) · <strong>${teacherName}T</strong>`
+            html: `<span class="alert-text">⚠ 미수행 경고</span> — ${H(maskName(s.name))} (${H(dday)}, ${pct}%) · <strong>${H(teacherName)}T</strong>`
           });
         }
         // 숙제 완료 확인 (수행도 100%)
         if (pct >= 100) {
           items.push({
             time: r.created_at, priority: 3, cat: 'hw-done',
-            html: `✅ 숙제 완료 — ${maskName(s.name)} · <strong>${teacherName}T</strong>`
+            html: `✅ 숙제 완료 — ${H(maskName(s.name))} · <strong>${H(teacherName)}T</strong>`
           });
         }
       });
@@ -1401,7 +1413,7 @@ const DB = {
         const label = st.status === 'absent' ? '❌ 결석' : '✅ 출석';
         items.push({
           time: r.created_at, priority: 2, cat: 'attendance',
-          html: `${label} — ${maskName(studentName)} · <strong>${teacherName}T</strong>`
+          html: `${label} — ${H(maskName(studentName))} · <strong>${H(teacherName)}T</strong>`
         });
       });
     } catch(e) {}
@@ -1415,7 +1427,7 @@ const DB = {
         const amount = (p.amount || 0).toLocaleString();
         items.push({
           time: p.created_at, priority: 2, cat: 'payment',
-          html: `💳 수강권 결제 — ${maskName(studentName)} (${amount}원)`
+          html: `💳 수강권 결제 — ${H(maskName(studentName))} (${H(amount)}원)`
         });
       });
     } catch(e) {}
@@ -1430,7 +1442,7 @@ const DB = {
         const grade = t.grade || t.score || '-';
         items.push({
           time: t.created_at, priority: 2, cat: 'test',
-          html: `📊 테스트 결과 — <strong>${teacherName}T</strong> → ${maskName(studentName)} (${grade})`
+          html: `📊 테스트 결과 — <strong>${H(teacherName)}T</strong> → ${H(maskName(studentName))} (${H(grade)})`
         });
       });
     } catch(e) {} // test_results 테이블 없으면 무시
@@ -1495,12 +1507,12 @@ const DB = {
           <div class="teacher-memo-card">
             <div class="teacher-memo-header">
               <div class="dot" style="background:${dotColor};"></div>
-              <div class="name">${t.name || '미지정'}T</div>
+              <div class="name">${H(t.name || '미지정')}T</div>
             </div>
-            <textarea class="broadcast-textarea" id="memo-${t.id}" style="min-height:60px; font-size:13px;">${latest?.content || ''}</textarea>
-            <div class="teacher-memo-date">${prev ? '이전: ' + new Date(prev.created_at).toLocaleDateString('ko-KR', {month:'numeric', day:'numeric'}) + ' — "' + (prev.content || '').substring(0, 30) + '"' : ''}</div>
+            <textarea class="broadcast-textarea" id="memo-${H(t.id)}" style="min-height:60px; font-size:13px;">${H(latest?.content || '')}</textarea>
+            <div class="teacher-memo-date">${prev ? '이전: ' + H(new Date(prev.created_at).toLocaleDateString('ko-KR', {month:'numeric', day:'numeric'})) + ' — "' + H((prev.content || '').substring(0, 30)) + '"' : ''}</div>
             <div style="display:flex; gap:8px; margin-top:8px;">
-              <button class="btn btn-ghost" onclick="saveMemo('${t.id}', '${(t.name || '').replace(/'/g, '')}')">저장</button>
+              <button class="btn btn-ghost" onclick="saveMemo('${H(t.id)}', '${H((t.name || '').replace(/'/g, ''))}')">저장</button>
               <button class="btn btn-ghost" onclick="toggleMemoLog('${t.id}')" style="font-size:12px;">📋 로그</button>
             </div>
             <div id="memo-log-${t.id}" style="display:none; margin-top:10px; max-height:200px; overflow-y:auto; border-top:1px solid #f0e8ec;">
@@ -1636,8 +1648,10 @@ const DB = {
   // 페이지 로드 시 데이터 로드
   loadRealData();
 
-  // 5분마다 자동 갱신 (펼친 카드 닫힘 방지)
-  setInterval(loadRealData, 300000);
+  // 5분마다 자동 갱신 (탭이 활성 상태일 때만, 펼친 카드 닫힘 방지)
+  setInterval(() => {
+    if (document.visibilityState === 'visible') loadRealData();
+  }, 300000);
 
   // ============================================
   // Extension 연동 — CRM 수집
@@ -1738,12 +1752,11 @@ const DB = {
   });
 
   async function renderTeachersPage() {
-    const db = new DashboardDB();
-    const teachers = await db.select('teachers', 'select=*');
-    const students = await db.select('students', 'select=*&is_active=eq.true');
-    const att = await db.select('attendance_records', `select=*&type=eq.homework&record_date=eq.${new Date().toISOString().split('T')[0]}`);
-    const sms = await db.select('sms_logs', 'select=*&order=sent_at.desc&limit=100');
-    
+    const teachers = await DB.select('teachers', 'select=*');
+    const students = await DB.select('students', 'select=*&is_active=eq.true');
+    const att = await DB.select('attendance_records', `select=*&type=eq.homework&record_date=eq.${new Date().toISOString().split('T')[0]}`);
+    const sms = await DB.select('sms_logs', 'select=*&order=sent_at.desc&limit=100');
+
     const tbody = document.getElementById('teacher-table-body');
     tbody.innerHTML = teachers.map(t => {
       const myStudents = students.filter(s => s.teacher_id === t.id);
@@ -1761,10 +1774,10 @@ const DB = {
       const notDone = total - done;
       const mySms = sms.filter(s => s.teacher_id === t.id);
       const rateColor = completionRate >= 80 ? '#4caf50' : completionRate >= 50 ? '#ff9800' : '#e74c3c';
-      
+
       return `<tr>
-        <td><strong>${t.name || '-'}T</strong></td>
-        <td style="color:#999;">${t.username || '-'}</td>
+        <td><strong>${H(t.name || '-')}T</strong></td>
+        <td style="color:#999;">${H(t.username || '-')}</td>
         <td>${myStudents.length}명</td>
         <td><span style="color:${rateColor}; font-weight:600;">${completionRate}%</span> (${done}/${total})</td>
         <td>${notDone > 0 ? `<span style="color:#e74c3c; font-weight:600;">${notDone}명</span>` : '✅ 0명'}</td>
@@ -1774,10 +1787,9 @@ const DB = {
   }
 
   async function renderStudentsPage() {
-    const db = new DashboardDB();
-    const students = await db.select('students', 'select=*&is_active=eq.true');
-    const teachers = await db.select('teachers', 'select=*');
-    const att = await db.select('attendance_records', `select=*&type=eq.homework&record_date=eq.${new Date().toISOString().split('T')[0]}`);
+    const students = await DB.select('students', 'select=*&is_active=eq.true');
+    const teachers = await DB.select('teachers', 'select=*');
+    const att = await DB.select('attendance_records', `select=*&type=eq.homework&record_date=eq.${new Date().toISOString().split('T')[0]}`);
     
     const teacherMap = Object.fromEntries(teachers.map(t => [t.id, t]));
     const perfMap = new Map();
@@ -1809,12 +1821,12 @@ const DB = {
         const statusText = pct === null ? '미수집' : pct >= 100 ? '✅ 완료' : pct > 0 ? `🔄 ${pct}%` : '❌ 미수행';
         
         return `<tr>
-          <td><strong>${displayName}</strong></td>
-          <td>${s.school || '-'} / ${s.grade || '-'}</td>
-          <td>${t ? t.name + 'T' : '-'}</td>
-          <td>${classDay}</td>
+          <td><strong>${H(displayName)}</strong></td>
+          <td>${H(s.school || '-')} / ${H(s.grade || '-')}</td>
+          <td>${t ? H(t.name) + 'T' : '-'}</td>
+          <td>${H(classDay)}</td>
           <td><span style="color:${statusColor}; font-weight:600;">${pct !== null ? pct + '%' : '-'}</span></td>
-          <td>${dDay || '-'}</td>
+          <td>${H(dDay || '-')}</td>
           <td style="font-size:12px;">${statusText}</td>
         </tr>`;
       }).join('');
@@ -1846,10 +1858,9 @@ const DB = {
   }
 
   async function renderSmsPage() {
-    const db = new DashboardDB();
-    const sms = await db.select('sms_logs', 'select=*&order=sent_at.desc&limit=50');
-    const teachers = await db.select('teachers', 'select=*');
-    const students = await db.select('students', 'select=*&is_active=eq.true');
+    const sms = await DB.select('sms_logs', 'select=*&order=sent_at.desc&limit=50');
+    const teachers = await DB.select('teachers', 'select=*');
+    const students = await DB.select('students', 'select=*&is_active=eq.true');
     
     const teacherMap = Object.fromEntries(teachers.map(t => [t.id, t]));
     const studentMap = Object.fromEntries(students.map(s => [s.id, s]));
@@ -1864,10 +1875,10 @@ const DB = {
       const student = studentMap[s.student_id];
       const date = s.sent_at ? new Date(s.sent_at).toLocaleDateString('ko-KR') : '-';
       return `<tr>
-        <td>${date}</td>
-        <td>${teacher?.name || '-'}T</td>
-        <td>${student?.name || '-'}</td>
-        <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s.message || '-'}</td>
+        <td>${H(date)}</td>
+        <td>${H(teacher?.name || '-')}T</td>
+        <td>${H(student?.name || '-')}</td>
+        <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${H(s.message || '-')}</td>
       </tr>`;
     }).join('');
   }
