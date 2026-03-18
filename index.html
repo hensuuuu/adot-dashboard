@@ -1148,9 +1148,8 @@ const DB = {
         } catch(e) {}
       });
       
-      // 날짜 내림차순 (최근 먼저) — 일요일 제외
+      // 날짜 내림차순 (최근 먼저) — 토/일 포함 (주말 수업 있음)
       const sortedDates = Object.keys(byDate)
-        .filter(date => new Date(date).getDay() !== 0) // 일요일 제외
         .sort((a, b) => b.localeCompare(a));
       const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
       
