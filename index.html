@@ -1417,15 +1417,16 @@ const DB = {
       });
     } catch(e) {}
 
-    // 3) 수강권 결제
+    // 3) 수강권 결제 — paid_at(실결제일) 기준, 최근 7일만
     try {
+      const sevenDaysAgo = new Date(Date.now() - 7*86400000).toISOString();
       const payments = await DB.select('payments',
-        `select=*,student:students(name),teacher:teachers(name)&order=created_at.desc&limit=10`);
+        `select=*,student:students(name),teacher:teachers(name)&paid_at=not.is.null&paid_at=gte.${sevenDaysAgo}&order=paid_at.desc&limit=10`);
       payments.forEach(p => {
         const studentName = p.student?.name || '학생';
         const amount = (p.amount || 0).toLocaleString();
         items.push({
-          time: p.created_at, priority: 2, cat: 'payment',
+          time: p.paid_at, priority: 2, cat: 'payment',
           html: `💳 수강권 결제 — ${H(maskName(studentName))} (${H(amount)}원)`
         });
       });
