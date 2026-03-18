@@ -1417,17 +1417,19 @@ const DB = {
       });
     } catch(e) {}
 
-    // 3) 수강권 결제 — paid_at(실결제일) 기준, 최근 7일만
+    // 3) 수강권 결제 — 이번달 결제건, paid_at 기준 정렬
     try {
-      const sevenDaysAgo = new Date(Date.now() - 7*86400000).toISOString();
+      const now = new Date();
       const payments = await DB.select('payments',
-        `select=*,student:students(name),teacher:teachers(name)&paid_at=not.is.null&paid_at=gte.${sevenDaysAgo}&order=paid_at.desc&limit=10`);
+        `select=*,student:students(name),teacher:teachers(name)&paid_at=not.is.null&period_year=eq.${now.getFullYear()}&period_month=eq.${now.getMonth()+1}&order=paid_at.desc&limit=15`);
       payments.forEach(p => {
         const studentName = p.student?.name || '학생';
+        const teacherName = p.teacher?.name;
         const amount = (p.amount || 0).toLocaleString();
+        const teacherLabel = teacherName ? ` · ${H(teacherName)}T` : '';
         items.push({
           time: p.paid_at, priority: 2, cat: 'payment',
-          html: `💳 수강권 결제 — ${H(maskName(studentName))} (${H(amount)}원)`
+          html: `💳 수강권 결제 — ${H(maskName(studentName))}${teacherLabel} (${H(amount)}원)`
         });
       });
     } catch(e) {}
