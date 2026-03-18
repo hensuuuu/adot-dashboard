@@ -360,6 +360,18 @@
       <div id="journal-list" style="display:none; flex-direction:column; gap:8px; padding:0 20px 16px 20px;"></div>
     </div>
 
+    <!-- 미배정 학생 알림 -->
+    <div id="unassigned-alert" style="display:none; background:linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); border-radius:16px; margin-bottom:20px; border:1px solid #ffe082; overflow:hidden;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; cursor:pointer; user-select:none;" onclick="const l=document.getElementById('unassigned-list');l.style.display=l.style.display==='none'?'flex':'none'; this.querySelector('.toggle-arrow').textContent=l.style.display==='none'?'▶':'▼';">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:15px; font-weight:700; color:#f57f17;">🟡 미배정 학생 (선생님 배정 필요)</span>
+          <span id="unassigned-count" style="background:#f57f17; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600;">0명</span>
+        </div>
+        <span class="toggle-arrow" style="font-size:12px; color:#f57f17;">▶</span>
+      </div>
+      <div id="unassigned-list" style="display:none; flex-direction:column; gap:8px; padding:0 20px 16px 20px;"></div>
+    </div>
+
     <!-- Tabs -->
     <div class="tabs">
       <div class="tab active" onclick="switchTab('students', this)">🎓 학생관리 <span class="badge">6</span></div>
@@ -1101,6 +1113,41 @@ const DB = {
     
     // 수업일지 미작성 로딩
     renderJournalAlert();
+    // 미배정 학생 로딩
+    renderUnassignedAlert();
+  }
+
+  async function renderUnassignedAlert() {
+    try {
+      // status=unassigned 또는 teacher_id가 null인 학생 (결제 완료된)
+      const students = await DB.select('students', 'select=*&status=eq.unassigned&order=created_at.desc');
+      const alertDiv = document.getElementById('unassigned-alert');
+      const countSpan = document.getElementById('unassigned-count');
+      const listDiv = document.getElementById('unassigned-list');
+      if (!alertDiv) return;
+
+      if (!students || students.length === 0) {
+        alertDiv.style.display = 'none';
+        return;
+      }
+
+      alertDiv.style.display = 'block';
+      countSpan.textContent = students.length + '명';
+
+      listDiv.innerHTML = students.map(s => {
+        const schoolGrade = [s.school, s.grade].filter(Boolean).join(' / ');
+        return `<div style="background:white; border-radius:10px; padding:10px 14px; border-left:4px solid #fbc02d; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong style="font-size:14px;">${s.name || '?'}</strong>
+            <span style="color:#999; font-size:12px; margin-left:8px;">${schoolGrade || ''}</span>
+          </div>
+          <span style="font-size:11px; color:#f57f17; font-weight:600;">선생님 배정 필요</span>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      // status 컬럼이 아직 없으면 무시
+      console.log('미배정 학생 로드:', e.message);
+    }
   }
 
   async function renderJournalAlert() {
@@ -1357,8 +1404,7 @@ const DB = {
   })();
 
   function maskName(name) {
-    if (!name || name.length <= 1) return name || '?';
-    return name[0] + '*'.repeat(name.length - 1);
+    return name || '?';
   }
   function formatTime(dateStr) {
     if (!dateStr) return '';
